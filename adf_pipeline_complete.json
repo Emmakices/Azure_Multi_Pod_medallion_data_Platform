@@ -1,0 +1,214 @@
+{
+    "name": "pl_process_all_companies_podA",
+    "properties": {
+        "description": "Enterprise pipeline with ephemeral job clusters per company",
+        "activities": [
+            {
+                "name": "Get_Company_Config",
+                "type": "WebActivity",
+                "dependsOn": [],
+                "policy": {
+                    "timeout": "0.12:00:00",
+                    "retry": 0,
+                    "retryIntervalInSeconds": 30,
+                    "secureOutput": false,
+                    "secureInput": false
+                },
+                "userProperties": [],
+                "typeProperties": {
+                    "url": "https://adb-3370863217573312.12.azuredatabricks.net/api/2.1/jobs/runs/submit",
+                    "method": "POST",
+                    "headers": {
+                        "Authorization": "Bearer YOUR_DATABRICKS_TOKEN_HERE",
+                        "Content-Type": "application/json"
+                    },
+                    "body": {
+                        "run_name": "Get_Company_Config_@{pipeline().RunId}",
+                        "new_cluster": {
+                            "spark_version": "13.3.x-scala2.12",
+                            "node_type_id": "Standard_D4s_v3",
+                            "num_workers": 1,
+                            "spark_env_vars": {
+                                "PYSPARK_PYTHON": "/databricks/python3/bin/python3"
+                            },
+                            "custom_tags": {
+                                "pod": "@{pipeline().parameters.pod_id}",
+                                "pipeline_run_id": "@{pipeline().RunId}",
+                                "cost_center": "data_platform",
+                                "task": "config_query"
+                            },
+                            "autotermination_minutes": 10
+                        },
+                        "notebook_task": {
+                            "notebook_path": "/Shared/config/get_company_config",
+                            "base_parameters": {
+                                "pod_id": "@{pipeline().parameters.pod_id}",
+                                "storage_account": "@{pipeline().parameters.storage_account}"
+                            }
+                        },
+                        "timeout_seconds": 3600
+                    }
+                }
+            },
+            {
+                "name": "Set_Job_Run_ID",
+                "type": "SetVariable",
+                "dependsOn": [
+                    {
+                        "activity": "Get_Company_Config",
+                        "dependencyConditions": [
+                            "Succeeded"
+                        ]
+                    }
+                ],
+                "policy": {
+                    "secureOutput": false,
+                    "secureInput": false
+                },
+                "userProperties": [],
+                "typeProperties": {
+                    "variableName": "job_run_id",
+                    "value": {
+                        "value": "@string(activity('Get_Company_Config').output.run_id)",
+                        "type": "Expression"
+                    }
+                }
+            },
+            {
+                "name": "Wait_Until_Job_Complete",
+                "type": "Until",
+                "dependsOn": [
+                    {
+                        "activity": "Set_Job_Run_ID",
+                        "dependencyConditions": [
+                            "Succeeded"
+                        ]
+                    }
+                ],
+                "userProperties": [],
+                "typeProperties": {
+                    "expression": {
+                        "value": "@or(equals(variables('job_status'), 'SUCCESS'), equals(variables('job_status'), 'TERMINATED'))",
+                        "type": "Expression"
+                    },
+                    "activities": [
+                        {
+                            "name": "Check_Job_Status",
+                            "type": "WebActivity",
+                            "dependsOn": [],
+                            "policy": {
+                                "timeout": "0.12:00:00",
+                                "retry": 0,
+                                "retryIntervalInSeconds": 30,
+                                "secureOutput": false,
+                                "secureInput": false
+                            },
+                            "userProperties": [],
+                            "typeProperties": {
+                                "url": {
+                                    "value": "https://adb-3370863217573312.12.azuredatabricks.net/api/2.1/jobs/runs/get?run_id=@{variables('job_run_id')}",
+                                    "type": "Expression"
+                                },
+                                "method": "GET",
+                                "headers": {
+                                    "Authorization": "Bearer YOUR_DATABRICKS_TOKEN_HERE"
+                                }
+                            }
+                        },
+                        {
+                            "name": "Update_Job_Status",
+                            "type": "SetVariable",
+                            "dependsOn": [
+                                {
+                                    "activity": "Check_Job_Status",
+                                    "dependencyConditions": [
+                                        "Succeeded"
+                                    ]
+                                }
+                            ],
+                            "policy": {
+                                "secureOutput": false,
+                                "secureInput": false
+                            },
+                            "userProperties": [],
+                            "typeProperties": {
+                                "variableName": "job_status",
+                                "value": {
+                                    "value": "@activity('Check_Job_Status').output.state.life_cycle_state",
+                                    "type": "Expression"
+                                }
+                            }
+                        },
+                        {
+                            "name": "Wait_10_Seconds",
+                            "type": "Wait",
+                            "dependsOn": [
+                                {
+                                    "activity": "Update_Job_Status",
+                                    "dependencyConditions": [
+                                        "Succeeded"
+                                    ]
+                                }
+                            ],
+                            "userProperties": [],
+                            "typeProperties": {
+                                "waitTimeInSeconds": 10
+                            }
+                        }
+                    ],
+                    "timeout": "0.12:00:00"
+                }
+            },
+            {
+                "name": "Get_Job_Output",
+                "type": "WebActivity",
+                "dependsOn": [
+                    {
+                        "activity": "Wait_Until_Job_Complete",
+                        "dependencyConditions": [
+                            "Succeeded"
+                        ]
+                    }
+                ],
+                "policy": {
+                    "timeout": "0.12:00:00",
+                    "retry": 0,
+                    "retryIntervalInSeconds": 30,
+                    "secureOutput": false,
+                    "secureInput": false
+                },
+                "userProperties": [],
+                "typeProperties": {
+                    "url": {
+                        "value": "https://adb-3370863217573312.12.azuredatabricks.net/api/2.1/jobs/runs/get-output?run_id=@{variables('job_run_id')}",
+                        "type": "Expression"
+                    },
+                    "method": "GET",
+                    "headers": {
+                        "Authorization": "Bearer YOUR_DATABRICKS_TOKEN_HERE"
+                    }
+                }
+            }
+        ],
+        "parameters": {
+            "pod_id": {
+                "type": "string",
+                "defaultValue": "podA"
+            },
+            "storage_account": {
+                "type": "string",
+                "defaultValue": "stdldevshared77b5h3"
+            }
+        },
+        "variables": {
+            "job_run_id": {
+                "type": "String"
+            },
+            "job_status": {
+                "type": "String",
+                "defaultValue": "RUNNING"
+            }
+        },
+        "annotations": []
+    }
+}

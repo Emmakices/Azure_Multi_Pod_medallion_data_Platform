@@ -173,7 +173,7 @@ Result: `/Shared/config/` directory created
 1. Click **Run All** at the top of the notebook
 2. Monitor execution in real-time
 3. Each cell will show:
-   - ⏳ Running (grey)
+   - PENDING Running (grey)
    - [DONE] Success (green)
    - [ERROR] Error (red)
 

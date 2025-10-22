@@ -70,6 +70,18 @@ locals {
       }
     ]
   ])
+
+  # Archive folders for processed files (prevents reprocessing)
+  # Structure: landing/{pod}/{company}/archive/
+  archive_folders = flatten([
+    for pod, config in var.companies : [
+      for company in config.companies : {
+        pod     = pod
+        company = company
+        path    = "${pod}/${company}/archive/.folder"
+      }
+    ]
+  ])
 }
 
 resource "azurerm_storage_blob" "company_folders" {
@@ -80,6 +92,19 @@ resource "azurerm_storage_blob" "company_folders" {
   storage_container_name = azurerm_storage_container.landing.name
   type                   = "Block"
   source_content         = "folder"
+}
+
+# Archive folder structure for processed files
+# Prevents reprocessing by moving completed files to archive with date stamps
+# Structure: landing/{pod}/{company}/archive/
+resource "azurerm_storage_blob" "archive_folders" {
+  for_each = { for item in local.archive_folders : "${item.pod}-${item.company}-archive" => item }
+
+  name                   = each.value.path
+  storage_account_name   = azurerm_storage_account.source_shared.name
+  storage_container_name = azurerm_storage_container.landing.name
+  type                   = "Block"
+  source_content         = "archive_folder"
 }
 
 # Event Grid system topic for blob storage events
@@ -96,22 +121,42 @@ resource "azurerm_eventgrid_system_topic" "blob_events" {
 }
 
 # Lifecycle management policy
-# Automatically deletes files after 30 days to control storage costs
-# Applies to landing container
+# Two-tier retention strategy:
+# 1. Landing files (active processing): Delete after 30 days
+# 2. Archive files (audit trail): Delete after 90 days
 resource "azurerm_storage_management_policy" "lifecycle" {
   storage_account_id = azurerm_storage_account.source_shared.id
 
+  # Rule 1: Delete old landing files (NOT in archive folder)
   rule {
-    name    = "delete-old-files"
+    name    = "delete-old-landing-files"
     enabled = true
 
     filters {
-      blob_types = ["blockBlob"]
+      prefix_match = ["landing/podA/", "landing/podB/", "landing/podC/"]
+      blob_types   = ["blockBlob"]
     }
 
     actions {
       base_blob {
         delete_after_days_since_modification_greater_than = 30
+      }
+    }
+  }
+
+  # Rule 2: Delete old archive files (audit trail retention)
+  rule {
+    name    = "delete-old-archive-files"
+    enabled = true
+
+    filters {
+      prefix_match = ["landing/podA/*/archive/", "landing/podB/*/archive/", "landing/podC/*/archive/"]
+      blob_types   = ["blockBlob"]
+    }
+
+    actions {
+      base_blob {
+        delete_after_days_since_modification_greater_than = 90
       }
     }
   }

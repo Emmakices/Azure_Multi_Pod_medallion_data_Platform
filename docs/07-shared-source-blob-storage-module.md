@@ -75,6 +75,67 @@ Aggregates to: gold/podA/finance/analytics/* (Delta)
 Power BI reports: Finance department metrics
 ```
 
+### Archive Pattern: Preventing Reprocessing
+
+**Problem**: Without archive folders, processed files remain in landing zone and get reprocessed on every pipeline run, creating duplicates and wasting cluster resources.
+
+**Solution**: After successful processing, files are moved to `archive/{date}/` subfolder.
+
+**Archive Folder Structure**:
+```
+landing/
+├── podA/
+│   ├── finance/
+│   │   ├── archive/              ← Processed files moved here
+│   │   │   ├── 20250115/         ← Date-stamped folders
+│   │   │   │   ├── hr_data.csv
+│   │   │   │   └── payroll.csv
+│   │   │   └── 20250116/
+│   │   │       └── hr_new.csv
+│   │   └── (new files land here)  ← Active landing zone
+│   ├── operations/
+│   │   ├── archive/
+│   │   └── (new files here)
+│   └── ...
+```
+
+**How Archive Pattern Works**:
+
+**Run 1** (new files arrive):
+1. Check_Data_Exists: Finds 2 files in `landing/podA/finance/`
+2. Copy_to_Bronze: Copies to bronze layer
+3. Archive_Processed_Files: Moves files to `landing/podA/finance/archive/20250115/`
+4. Landing folder now empty DONE
+
+**Run 2** (1 new file arrives):
+1. Check_Data_Exists: Finds 1 file in `landing/podA/finance/`
+2. Copy_to_Bronze: Copies only the new file
+3. Archive_Processed_Files: Moves to `landing/podA/finance/archive/20250115/`
+4. Old files stay in archive, not reprocessed DONE
+
+**Run 3** (no new files):
+1. Check_Data_Exists: Finds 0 files in `landing/podA/finance/`
+2. If_Has_Data returns FALSE
+3. Entire pipeline skipped - no cluster created DONE
+
+**Archive Folders Created via Terraform**:
+- `landing/podA/finance/archive/.folder`
+- `landing/podA/operations/archive/.folder`
+- `landing/podA/marketing/archive/.folder`
+- `landing/podA/it/archive/.folder`
+- (Same for podB and podC - 10 archive folders total)
+
+**Lifecycle Management**:
+- Landing files: Auto-delete after 30 days (active processing zone)
+- Archive files: Auto-delete after 90 days (audit/compliance retention)
+
+**Benefits**:
+- COMPLETED: No duplicate processing
+- COMPLETED: Clear separation of new vs processed files
+- COMPLETED: Complete audit trail with timestamps
+- COMPLETED: Can reprocess from archive if needed
+- COMPLETED: Automatic cleanup via lifecycle policies
+
 ### Why Department-Level Folders in Source Blob?
 
 **Benefit 1: Event Filtering**
@@ -498,22 +559,42 @@ resource "azurerm_eventgrid_system_topic" "blob_events" {
 }
 
 # Lifecycle management policy
-# Automatically deletes files after 30 days to control storage costs
-# Applies to all containers (hr-landing, payroll-landing, finance-landing)
+# Two-tier retention strategy:
+# 1. Landing files (active processing): Delete after 30 days
+# 2. Archive files (audit trail): Delete after 90 days
 resource "azurerm_storage_management_policy" "lifecycle" {
   storage_account_id = azurerm_storage_account.source_shared.id
 
+  # Rule 1: Delete old landing files (NOT in archive folder)
   rule {
-    name    = "delete-old-files"
+    name    = "delete-old-landing-files"
     enabled = true
 
     filters {
-      blob_types = ["blockBlob"]
+      prefix_match = ["landing/podA/", "landing/podB/", "landing/podC/"]
+      blob_types   = ["blockBlob"]
     }
 
     actions {
       base_blob {
         delete_after_days_since_modification_greater_than = 30
+      }
+    }
+  }
+
+  # Rule 2: Delete old archive files (audit trail retention)
+  rule {
+    name    = "delete-old-archive-files"
+    enabled = true
+
+    filters {
+      prefix_match = ["landing/podA/*/archive/", "landing/podB/*/archive/", "landing/podC/*/archive/"]
+      blob_types   = ["blockBlob"]
+    }
+
+    actions {
+      base_blob {
+        delete_after_days_since_modification_greater_than = 90
       }
     }
   }
@@ -1069,15 +1150,139 @@ terraform/environments/dev/
 └── main.tf        - TO BE UPDATED: Change from for_each loop to single module instantiation
 ```
 
+## Latest Update: Archive Folders for Preventing Reprocessing
+
+### What Was Added (October 2025)
+
+**Problem Solved**: Files in landing zone were being reprocessed on every pipeline run, creating duplicates and wasting resources.
+
+**Solution Implemented**: Archive pattern with Terraform-managed folder structure.
+
+### Terraform Changes Made
+
+**File**: `terraform/modules/source-blob-storage/main.tf`
+
+**Added Local Variable for Archive Folders**:
+```hcl
+locals {
+  # Archive folders for processed files (prevents reprocessing)
+  # Structure: landing/{pod}/{company}/archive/
+  archive_folders = flatten([
+    for pod, config in var.companies : [
+      for company in config.companies : {
+        pod     = pod
+        company = company
+        path    = "${pod}/${company}/archive/.folder"
+      }
+    ]
+  ])
+}
+```
+
+**Added Archive Folder Resource**:
+```hcl
+# Archive folder structure for processed files
+# Prevents reprocessing by moving completed files to archive with date stamps
+resource "azurerm_storage_blob" "archive_folders" {
+  for_each = { for item in local.archive_folders : "${item.pod}-${item.company}-archive" => item }
+
+  name                   = each.value.path
+  storage_account_name   = azurerm_storage_account.source_shared.name
+  storage_container_name = azurerm_storage_container.landing.name
+  type                   = "Block"
+  source_content         = "archive_folder"
+}
+```
+
+**Enhanced Lifecycle Management**:
+- Old: Delete all files after 30 days
+- New: Landing files (30 days), Archive files (90 days for audit trail)
+
+### Archive Folders Created
+
+**10 archive folders across all pods**:
+- podA: finance/archive/, operations/archive/, marketing/archive/, it/archive/
+- podB: finance/archive/, operations/archive/, sales/archive/
+- podC: finance/archive/, hr_central/archive/, compliance/archive/
+
+### ADF Integration
+
+**Step 16a in ADF Pipeline**:
+After `Copy_to_Bronze` activity succeeds, `Archive_Processed_Files` activity:
+1. Copies files from `landing/{pod}/{company}/` to `landing/{pod}/{company}/archive/{yyyymmdd}/`
+2. Deletes source files (moves them)
+3. Next run only sees NEW files
+
+**Dataset Required**: `ds_landing_archive` with parameters:
+- `pod_id`, `company`, `archive_date`, `file_name`
+
+### Verification Commands
+
+```bash
+# List all archive folders
+az storage blob list \
+  --account-name stblobdevsharedb0re7y \
+  --container-name landing \
+  --query "[?contains(name, 'archive')].name" \
+  -o table
+
+# Expected output:
+# podA/finance/archive/.folder
+# podA/operations/archive/.folder
+# podA/marketing/archive/.folder
+# podA/it/archive/.folder
+# podB/finance/archive/.folder
+# podB/operations/archive/.folder
+# podB/sales/archive/.folder
+# podC/finance/archive/.folder
+# podC/hr_central/archive/.folder
+# podC/compliance/archive/.folder
+```
+
+### Current Storage Structure
+
+```
+stblobdevsharedb0re7y/
+└── landing/
+    ├── podA/
+    │   ├── finance/
+    │   │   ├── archive/          ← NEW: Processed files
+    │   │   │   ├── 20250115/     ← Date-stamped
+    │   │   │   └── 20250116/
+    │   │   └── *.csv             ← Active: New files
+    │   ├── operations/
+    │   │   ├── archive/          ← NEW
+    │   │   └── *.csv
+    │   ├── marketing/
+    │   │   ├── archive/          ← NEW
+    │   │   └── *.csv
+    │   └── it/
+    │       ├── archive/          ← NEW
+    │       └── *.csv
+    ├── podB/ (same structure)
+    └── podC/ (same structure)
+```
+
+### Benefits Achieved
+
+- COMPLETED: No duplicate processing - files processed once, then archived
+- COMPLETED: Smart processing - only new files trigger clusters
+- COMPLETED: Cost optimization - empty runs skip cluster creation
+- COMPLETED: Audit trail - 90-day archive retention for compliance
+- COMPLETED: Reprocessing capability - can restore from archive if needed
+- COMPLETED: Automatic cleanup - lifecycle policies manage storage costs
+
 ## Key Takeaways
 
 - **Shared infrastructure reduces costs by 60%** compared to per-pod isolated storage
 - **Folder-based isolation** provides logical separation without physical infrastructure duplication
 - **Event Grid filtering in ADF** ensures pod isolation even with a shared Event Grid topic
 - **Folder markers** (`.folder` blobs) make the folder structure visible before data files exist
+- **Archive pattern prevents reprocessing** - processed files moved to archive with date stamps
+- **Two-tier lifecycle management** - 30 days landing, 90 days archive
 - **RBAC becomes more critical** when pods share infrastructure resources
-- **One storage account, one Event Grid topic, three containers, nine folders** serve all pods
+- **One storage account, one container, 10 companies, 10 archive folders** serve all pods
 - **Terraform code is simpler** without `for_each` loops for storage account creation
-- **Scalability improves** - adding podD just requires creating folders, not deploying new infrastructure
+- **Scalability improves** - adding company just requires folders, not new infrastructure
 - **Operational overhead decreases** with fewer resources to monitor and manage
 - **ADF event triggers** must use path prefix filters to ensure correct pod routing

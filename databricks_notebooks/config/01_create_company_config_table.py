@@ -25,6 +25,19 @@
 
 # COMMAND ----------
 
+# Configure storage access using Databricks Secrets (Enterprise way)
+# This must be run before accessing ADLS Gen2
+storage_key = dbutils.secrets.get(scope="storage-keys", key="datalake-key")
+
+spark.conf.set(
+    "fs.azure.account.key.stdldevshared77b5h3.dfs.core.windows.net",
+    storage_key
+)
+
+print("Storage access configured securely via Databricks Secrets")
+
+# COMMAND ----------
+
 from pyspark.sql import SparkSession
 from pyspark.sql.types import (
     StructType, StructField, StringType, IntegerType,
@@ -142,7 +155,7 @@ company_config_schema = StructType([
                 metadata={"comment": "Configuration schema version"})
 ])
 
-print("✅ Enterprise schema defined with comprehensive metadata")
+print("[OK] Enterprise schema defined with comprehensive metadata")
 
 # COMMAND ----------
 
@@ -175,12 +188,12 @@ company_configs = [
         "spot_instances_enabled": True,
         "estimated_monthly_gb": 150.5,
         "estimated_monthly_rows": 5000000,
-        "created_by": "data.engineering@company.com",
+        "created_by": "ihetuemmanuel@gmail.com",
         "created_at": datetime.now(),
-        "modified_by": "data.engineering@company.com",
+        "modified_by": "ihetuemmanuel@gmail.com",
         "modified_at": datetime.now(),
         "approval_status": "APPROVED",
-        "approved_by": "manager@company.com",
+        "approved_by": "ihetuemmanuel@gmail.com",
         "comments": "Primary finance data processing",
         "config_version": TABLE_VERSION
     },
@@ -205,12 +218,12 @@ company_configs = [
         "spot_instances_enabled": True,
         "estimated_monthly_gb": 100.0,
         "estimated_monthly_rows": 3000000,
-        "created_by": "data.engineering@company.com",
+        "created_by": "ihetuemmanuel@gmail.com",
         "created_at": datetime.now(),
-        "modified_by": "data.engineering@company.com",
+        "modified_by": "ihetuemmanuel@gmail.com",
         "modified_at": datetime.now(),
         "approval_status": "APPROVED",
-        "approved_by": "manager@company.com",
+        "approved_by": "ihetuemmanuel@gmail.com",
         "comments": "Operations and logistics data",
         "config_version": TABLE_VERSION
     },
@@ -235,12 +248,12 @@ company_configs = [
         "spot_instances_enabled": True,
         "estimated_monthly_gb": 50.0,
         "estimated_monthly_rows": 1000000,
-        "created_by": "data.engineering@company.com",
+        "created_by": "ihetuemmanuel@gmail.com",
         "created_at": datetime.now(),
-        "modified_by": "data.engineering@company.com",
+        "modified_by": "ihetuemmanuel@gmail.com",
         "modified_at": datetime.now(),
         "approval_status": "APPROVED",
-        "approved_by": "manager@company.com",
+        "approved_by": "ihetuemmanuel@gmail.com",
         "comments": "Marketing campaigns and CRM data",
         "config_version": TABLE_VERSION
     },
@@ -265,12 +278,12 @@ company_configs = [
         "spot_instances_enabled": True,
         "estimated_monthly_gb": 30.0,
         "estimated_monthly_rows": 800000,
-        "created_by": "data.engineering@company.com",
+        "created_by": "ihetuemmanuel@gmail.com",
         "created_at": datetime.now(),
-        "modified_by": "data.engineering@company.com",
+        "modified_by": "ihetuemmanuel@gmail.com",
         "modified_at": datetime.now(),
         "approval_status": "APPROVED",
-        "approved_by": "manager@company.com",
+        "approved_by": "ihetuemmanuel@gmail.com",
         "comments": "IT support tickets and audit logs",
         "config_version": TABLE_VERSION
     },
@@ -297,12 +310,12 @@ company_configs = [
         "spot_instances_enabled": True,
         "estimated_monthly_gb": 120.0,
         "estimated_monthly_rows": 4000000,
-        "created_by": "data.engineering@company.com",
+        "created_by": "ihetuemmanuel@gmail.com",
         "created_at": datetime.now(),
-        "modified_by": "data.engineering@company.com",
+        "modified_by": "ihetuemmanuel@gmail.com",
         "modified_at": datetime.now(),
         "approval_status": "APPROVED",
-        "approved_by": "manager@company.com",
+        "approved_by": "ihetuemmanuel@gmail.com",
         "comments": "Pod B finance operations",
         "config_version": TABLE_VERSION
     },
@@ -327,12 +340,12 @@ company_configs = [
         "spot_instances_enabled": True,
         "estimated_monthly_gb": 90.0,
         "estimated_monthly_rows": 2500000,
-        "created_by": "data.engineering@company.com",
+        "created_by": "ihetuemmanuel@gmail.com",
         "created_at": datetime.now(),
-        "modified_by": "data.engineering@company.com",
+        "modified_by": "ihetuemmanuel@gmail.com",
         "modified_at": datetime.now(),
         "approval_status": "APPROVED",
-        "approved_by": "manager@company.com",
+        "approved_by": "ihetuemmanuel@gmail.com",
         "comments": "Pod B operations data",
         "config_version": TABLE_VERSION
     },
@@ -357,12 +370,12 @@ company_configs = [
         "spot_instances_enabled": True,
         "estimated_monthly_gb": 200.0,
         "estimated_monthly_rows": 6000000,
-        "created_by": "data.engineering@company.com",
+        "created_by": "ihetuemmanuel@gmail.com",
         "created_at": datetime.now(),
-        "modified_by": "data.engineering@company.com",
+        "modified_by": "ihetuemmanuel@gmail.com",
         "modified_at": datetime.now(),
         "approval_status": "APPROVED",
-        "approved_by": "manager@company.com",
+        "approved_by": "ihetuemmanuel@gmail.com",
         "comments": "Sales and CRM data processing",
         "config_version": TABLE_VERSION
     },
@@ -389,12 +402,12 @@ company_configs = [
         "spot_instances_enabled": True,
         "estimated_monthly_gb": 110.0,
         "estimated_monthly_rows": 3500000,
-        "created_by": "data.engineering@company.com",
+        "created_by": "ihetuemmanuel@gmail.com",
         "created_at": datetime.now(),
-        "modified_by": "data.engineering@company.com",
+        "modified_by": "ihetuemmanuel@gmail.com",
         "modified_at": datetime.now(),
         "approval_status": "APPROVED",
-        "approved_by": "manager@company.com",
+        "approved_by": "ihetuemmanuel@gmail.com",
         "comments": "Pod C finance operations",
         "config_version": TABLE_VERSION
     },
@@ -419,12 +432,12 @@ company_configs = [
         "spot_instances_enabled": False,  # Sensitive data - no spot instances
         "estimated_monthly_gb": 300.0,
         "estimated_monthly_rows": 8000000,
-        "created_by": "data.engineering@company.com",
+        "created_by": "ihetuemmanuel@gmail.com",
         "created_at": datetime.now(),
-        "modified_by": "data.engineering@company.com",
+        "modified_by": "ihetuemmanuel@gmail.com",
         "modified_at": datetime.now(),
         "approval_status": "APPROVED",
-        "approved_by": "hr.director@company.com",
+        "approved_by": "ihetuemmanuel@gmail.com",
         "comments": "Central HR data - highly sensitive, requires higher SLA",
         "config_version": TABLE_VERSION
     },
@@ -449,18 +462,18 @@ company_configs = [
         "spot_instances_enabled": False,  # Compliance data - no spot instances
         "estimated_monthly_gb": 75.0,
         "estimated_monthly_rows": 2000000,
-        "created_by": "data.engineering@company.com",
+        "created_by": "ihetuemmanuel@gmail.com",
         "created_at": datetime.now(),
-        "modified_by": "data.engineering@company.com",
+        "modified_by": "ihetuemmanuel@gmail.com",
         "modified_at": datetime.now(),
         "approval_status": "APPROVED",
-        "approved_by": "compliance.officer@company.com",
+        "approved_by": "ihetuemmanuel@gmail.com",
         "comments": "Compliance and audit data - no interruptions allowed",
         "config_version": TABLE_VERSION
     }
 ]
 
-print(f"✅ Defined {len(company_configs)} company configurations")
+print(f"[OK] Defined {len(company_configs)} company configurations")
 
 # COMMAND ----------
 
@@ -478,62 +491,62 @@ print("Running data quality validations...")
 # Validation 1: Check for duplicate company_ids
 duplicate_check = df_companies.groupBy("company_id").count().filter(col("count") > 1)
 if duplicate_check.count() > 0:
-    print("❌ ERROR: Duplicate company_ids found!")
+    print("[ERROR] ERROR: Duplicate company_ids found!")
     duplicate_check.show()
     raise ValueError("Duplicate company_ids are not allowed")
 else:
-    print("✅ No duplicate company_ids")
+    print("[OK] No duplicate company_ids")
 
 # Validation 2: Check worker count is within acceptable range
 invalid_workers = df_companies.filter((col("worker_count") < 1) | (col("worker_count") > 10))
 if invalid_workers.count() > 0:
-    print("❌ ERROR: Invalid worker_count found (must be 1-10)")
+    print("[ERROR] ERROR: Invalid worker_count found (must be 1-10)")
     invalid_workers.select("company_id", "worker_count").show()
     raise ValueError("Worker count must be between 1 and 10")
 else:
-    print("✅ All worker counts are valid (1-10)")
+    print("[OK] All worker counts are valid (1-10)")
 
 # Validation 3: Check that domains array is not empty
 empty_domains = df_companies.filter(size(col("domains")) == 0)
 if empty_domains.count() > 0:
-    print("❌ ERROR: Companies with empty domains found")
+    print("[ERROR] ERROR: Companies with empty domains found")
     empty_domains.select("company_id", "domains").show()
     raise ValueError("Each company must have at least one domain")
 else:
-    print("✅ All companies have domains defined")
+    print("[OK] All companies have domains defined")
 
 # Validation 4: Check valid priorities
 valid_priorities = ["HIGH", "MEDIUM", "LOW"]
 invalid_priorities = df_companies.filter(~col("priority").isin(valid_priorities))
 if invalid_priorities.count() > 0:
-    print("❌ ERROR: Invalid priority values found")
+    print("[ERROR] ERROR: Invalid priority values found")
     invalid_priorities.select("company_id", "priority").show()
     raise ValueError("Priority must be HIGH, MEDIUM, or LOW")
 else:
-    print("✅ All priorities are valid")
+    print("[OK] All priorities are valid")
 
 # Validation 5: Check valid data classifications
 valid_classifications = ["PUBLIC", "INTERNAL", "CONFIDENTIAL", "RESTRICTED"]
 invalid_classifications = df_companies.filter(~col("data_classification").isin(valid_classifications))
 if invalid_classifications.count() > 0:
-    print("❌ ERROR: Invalid data_classification values found")
+    print("[ERROR] ERROR: Invalid data_classification values found")
     invalid_classifications.select("company_id", "data_classification").show()
     raise ValueError("Data classification must be PUBLIC, INTERNAL, CONFIDENTIAL, or RESTRICTED")
 else:
-    print("✅ All data classifications are valid")
+    print("[OK] All data classifications are valid")
 
 # Validation 6: Check autoscale min <= max
 invalid_autoscale = df_companies.filter(
     col("autoscale_min_workers") > col("autoscale_max_workers")
 )
 if invalid_autoscale.count() > 0:
-    print("❌ ERROR: Autoscale min > max found")
+    print("[ERROR] ERROR: Autoscale min > max found")
     invalid_autoscale.select("company_id", "autoscale_min_workers", "autoscale_max_workers").show()
     raise ValueError("Autoscale min_workers must be <= max_workers")
 else:
-    print("✅ All autoscale configurations are valid")
+    print("[OK] All autoscale configurations are valid")
 
-print("\n✅ All data quality validations passed!")
+print("\n[OK] All data quality validations passed!")
 
 # COMMAND ----------
 
@@ -595,7 +608,7 @@ print(f"Writing company configuration table to: {COMPANY_TABLE_PATH}")
     .save(COMPANY_TABLE_PATH)
 )
 
-print(f"✅ Delta table created successfully at: {COMPANY_TABLE_PATH}")
+print(f"[OK] Delta table created successfully at: {COMPANY_TABLE_PATH}")
 
 # COMMAND ----------
 
@@ -620,7 +633,7 @@ ALTER TABLE company_config SET TBLPROPERTIES (
     'delta.autoOptimize.optimizeWrite' = 'true',
     'delta.autoOptimize.autoCompact' = 'true',
     'description' = 'Central configuration registry for company data processing',
-    'owner' = 'data.engineering@company.com',
+    'owner' = 'ihetuemmanuel@gmail.com',
     'created_by' = 'Databricks ETL Pipeline',
     'environment' = 'dev',
     'data_classification' = 'INTERNAL',
@@ -629,7 +642,7 @@ ALTER TABLE company_config SET TBLPROPERTIES (
 )
 """)
 
-print("✅ Table properties set for enterprise governance")
+print("[OK] Table properties set for enterprise governance")
 
 # COMMAND ----------
 
@@ -644,7 +657,7 @@ spark.sql("OPTIMIZE company_config")
 # Create Z-ordering for common query patterns
 spark.sql("OPTIMIZE company_config ZORDER BY (enabled, priority, data_classification)")
 
-print("✅ Table optimized with Z-ordering")
+print("[OK] Table optimized with Z-ordering")
 
 # COMMAND ----------
 
@@ -659,7 +672,7 @@ print("=" * 80)
 
 # Verify table was created
 df_verify = spark.read.format("delta").load(COMPANY_TABLE_PATH)
-print(f"\n✅ Table contains {df_verify.count()} companies")
+print(f"\n[OK] Table contains {df_verify.count()} companies")
 
 # Show table description
 print("\n" + "=" * 80)
@@ -770,7 +783,7 @@ WHERE enabled = true
 ORDER BY pod_id, priority DESC, company
 """)
 
-print("✅ Simplified view created: vw_company_config_simple")
+print("[OK] Simplified view created: vw_company_config_simple")
 
 # Test the view
 print("\nView contents:")
@@ -794,7 +807,7 @@ print(config_json[:1000] + "\n... (truncated)")
 # Optionally write to file system
 json_path = f"{GOLD_CONFIG_PATH}/company_config_export.json"
 dbutils.fs.put(json_path, config_json, overwrite=True)
-print(f"\n✅ Full configuration exported to: {json_path}")
+print(f"\n[OK] Full configuration exported to: {json_path}")
 
 # COMMAND ----------
 
@@ -809,12 +822,12 @@ print("=" * 80)
 print(f"\n📍 Location: {COMPANY_TABLE_PATH}")
 print(f"📊 Total Companies: {df_verify.count()}")
 print(f"🏢 Pods Configured: {df_verify.select('pod_id').distinct().count()}")
-print(f"✅ Enabled Companies: {df_verify.filter('enabled = true').count()}")
+print(f"[OK] Enabled Companies: {df_verify.filter('enabled = true').count()}")
 print(f"🔒 Data Classifications: {df_verify.select('data_classification').distinct().count()}")
 print(f"📋 Schema Version: {TABLE_VERSION}")
 print(f"🌍 Environment: {ENVIRONMENT}")
 
-print("\n✅ ENTERPRISE FEATURES ENABLED:")
+print("\n[OK] ENTERPRISE FEATURES ENABLED:")
 print("   • Change Data Feed (CDC) for audit trail")
 print("   • Column mapping for schema evolution")
 print("   • Partitioning by pod_id for performance")
@@ -823,7 +836,7 @@ print("   • Auto-optimize and auto-compaction")
 print("   • 90-day log retention for compliance")
 print("   • Comprehensive business and technical metadata")
 
-print("\n✅ READY FOR ADF INTEGRATION")
+print("\n[OK] READY FOR ADF INTEGRATION")
 print("   Use query: SELECT * FROM company_config WHERE pod_id = @pod_id AND enabled = true")
 print("=" * 80)
 

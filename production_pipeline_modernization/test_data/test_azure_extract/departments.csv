@@ -1,0 +1,5 @@
+DepartmentID,DepartmentName,Manager,Budget,Location
+D01,Engineering,Alice Johnson,500000,Toronto
+D02,Marketing,Bob Williams,300000,Vancouver
+D03,Finance,Carol Davis,400000,Montreal
+D04,HR,David Miller,250000,Calgary

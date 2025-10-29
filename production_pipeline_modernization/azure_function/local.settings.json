@@ -1,0 +1,13 @@
+{
+  "IsEncrypted": false,
+  "Values": {
+    "AzureWebJobsStorage": "UseDevelopmentStorage=true",
+    "FUNCTIONS_WORKER_RUNTIME": "powershell",
+    "FUNCTIONS_WORKER_RUNTIME_VERSION": "7.2",
+    "DATA_STORAGE_CONNECTION_STRING": "DefaultEndpointsProtocol=https;AccountName=your-storage-account;AccountKey=your-key;EndpointSuffix=core.windows.net",
+    "DFLINK_CONTAINER_NAME": "dflink",
+    "ARCHIVE_CONTAINER_NAME": "archive",
+    "VALIDATION_TEMP_CONTAINER_NAME": "validation-temp",
+    "ALERT_EMAIL_RECIPIENTS": "ihetuemmanuel@gmail.com"
+  }
+}

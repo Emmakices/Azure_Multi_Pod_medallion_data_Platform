@@ -1,0 +1,25 @@
+[
+  {
+    "topic": "/subscriptions/e97fa8c6-457d-495f-aa82-0d87e72f5842/resourceGroups/rg-platform-dev/providers/Microsoft.Storage/storageAccounts/stdldevshared77b5h3",
+    "subject": "/blobServices/default/containers/test/blobs/gc_data_2025-10-28.zip",
+    "eventType": "Microsoft.Storage.BlobCreated",
+    "eventTime": "2025-10-28T14:30:00.0000000Z",
+    "id": "gc-data-test-12345",
+    "data": {
+      "api": "PutBlob",
+      "clientRequestId": "gc-request-id",
+      "requestId": "gc-request-12345",
+      "eTag": "0x8D9F6C8B9E7F0A1",
+      "contentType": "application/x-zip-compressed",
+      "contentLength": 824,
+      "blobType": "BlockBlob",
+      "url": "https://stdldevshared77b5h3.blob.core.windows.net/test/gc_data_2025-10-28.zip",
+      "sequencer": "00000000000000000000000000000000000000000000000000",
+      "storageDiagnostics": {
+        "batchId": "gc-batch-id"
+      }
+    },
+    "dataVersion": "",
+    "metadataVersion": "1"
+  }
+]

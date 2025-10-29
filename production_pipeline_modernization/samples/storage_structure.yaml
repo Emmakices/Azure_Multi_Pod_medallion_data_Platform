@@ -1,0 +1,131 @@
+# Storage Structure Documentation
+# Fill this out based on what you see in Azure Storage
+
+# ==============================================================================
+# DFLINK CONTAINER (Landing Zone)
+# ==============================================================================
+dflink_container:
+  description: "Where files arrive from Government of Canada via Microsoft"
+
+  # List actual files you see in the container
+  files:
+    - name: "example_file.zip"
+      size: "50 MB"
+      last_modified: "2025-01-17"
+
+    - name: "example_hash_file.txt"
+      size: "1 KB"
+      last_modified: "2025-01-17"
+
+    # Add more files as you see them
+
+  # File naming pattern
+  naming_convention:
+    zip_files: "PSPS_HR_2025-01-17.zip (example - replace with actual pattern)"
+    hash_files: "PSPS_HR_2025-01-17.txt (example - replace with actual pattern)"
+
+  # Do hash files arrive WITH zip files or separately?
+  hash_file_arrival: "together" # or "separately" or "inside_zip"
+
+# ==============================================================================
+# HASH FILE CONTENTS
+# ==============================================================================
+hash_file_example:
+  description: "Copy/paste actual contents of a hash file here"
+
+  # Paste the actual contents between the quotes below
+  content: |
+    # Root: folder_name
+    abc123def456789abcdef...|file1.xlsx
+    def456789abc123def456...|file2.csv
+
+    (Replace this with actual hash file contents - copy entire file)
+
+  # Questions about hash file
+  what_is_hashed:
+    # Option A: Hash of the ZIP file itself
+    # Option B: Hashes of files INSIDE the ZIP (before compression)
+    answer: "Option A or B?"
+
+  hash_file_location:
+    # Option A: Separate file alongside ZIP in dflink container
+    # Option B: Inside the ZIP file itself
+    # Option C: One hash file for multiple ZIPs
+    answer: "Option A, B, or C?"
+
+# ==============================================================================
+# ZIP FILE CONTENTS
+# ==============================================================================
+zip_file_structure:
+  description: "What's inside a typical ZIP file after extraction"
+
+  example_zip_name: "PSPS_HR_2025-01-17.zip"
+
+  # List what files/folders are INSIDE the ZIP
+  contents:
+    - "Employee_Data.xlsx"
+    - "Payroll_Data.xlsx"
+    - "hash_file.txt (if hash is inside ZIP)"
+
+    # Or if there are folders:
+    # - "HR/Employee_Data.xlsx"
+    # - "Payroll/Payroll_Data.xlsx"
+
+  # Replace above with actual structure you see
+
+# ==============================================================================
+# DAY_FORCE_TEMPLATES CONTAINER (After Extraction)
+# ==============================================================================
+day_force_templates_container:
+  description: "Where files are stored after manual extraction"
+
+  structure:
+    psps:
+      description: "Company PSPS"
+      subfolders:
+        - name: "HR"
+          files:
+            - "Employee_Data.xlsx"
+            - "Benefits_Data.xlsx"
+
+        - name: "Payroll"
+          files:
+            - "Payroll_Data.xlsx"
+
+    sspc:
+      description: "Company SSPC"
+      subfolders:
+        - name: "HR"
+          files:
+            - "Employee_Data.xlsx"
+
+        - name: "Payroll"
+          files:
+            - "Payroll_Data.xlsx"
+
+  # Replace with actual folder/file structure
+
+# ==============================================================================
+# ADDITIONAL OBSERVATIONS
+# ==============================================================================
+observations:
+  # Any other details you noticed
+  notes:
+    - "Files arrive at 8:00 AM daily"
+    - "ZIP files are password protected (if true)"
+    - "Sometimes multiple ZIP files arrive at once"
+    - "Add any other observations here"
+
+  # Who provides the files
+  data_source:
+    provider: "Government of Canada"
+    route: "via Microsoft"
+
+  # How often files arrive
+  frequency: "Daily / Weekly / Ad-hoc?"
+
+  # Typical file sizes
+  file_sizes:
+    zip_smallest: "10 MB"
+    zip_largest: "200 MB"
+    zip_typical: "50 MB"

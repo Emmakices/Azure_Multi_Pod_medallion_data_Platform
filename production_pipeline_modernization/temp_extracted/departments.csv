@@ -1,0 +1,6 @@
+DepartmentID,DepartmentName,Manager,Location,EmployeeCount,Budget
+D001,Finance,E006,Ottawa,25,2500000
+D002,Operations,E002,Toronto,40,3000000
+D003,IT,E008,Vancouver,30,2800000
+D004,HR,E009,Montreal,15,1200000
+D005,Marketing,E010,Calgary,20,1800000

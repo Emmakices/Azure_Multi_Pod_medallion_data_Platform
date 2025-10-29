@@ -1,0 +1,330 @@
+<#
+.SYNOPSIS
+    Generates or validates SHA512 hashes for files in a folder.
+
+.DESCRIPTION
+    - Mode "Generate": Creates SHA512 hashes for all files in the specified folder using relative paths.
+    - Mode "Validate": Verifies files against a previously generated hash file.
+    Supports an optional -RootPath to specify where the files are located
+    (useful if validating on a different system).
+
+.PARAMETER Mode
+    "Generate" or "Validate"
+
+.PARAMETER FolderPath
+    Folder to process (required for Generate mode)
+
+.PARAMETER HashFile
+    Hash file to validate against (required for Validate mode)
+
+.PARAMETER RootPath
+    Optional root folder where files are located during validation
+
+.PARAMETER OutputFile
+    Optional output file for generated/validated results
+
+.PARAMETER Silent
+    Suppress console output (useful for scripting)
+
+.PARAMETER ErrorCodes
+    Display error codes for the command
+
+.PARAMETER Version
+    Display script version
+
+.EXAMPLE
+    hash.ps1 -Mode Generate -FolderPath C:\files -OutputFile myhashes.txt
+
+.EXAMPLE
+    hash.ps1 -Mode Validate -HashFile myhashes.txt -RootPath D:\received -OutputFile results.txt
+
+.NOTES
+    - Version 0.3: 10/24/2025 Added Error code output table
+#>
+
+param(
+    [string]$Mode,
+    [string]$FolderPath,
+    [string]$HashFile,
+    [string]$OutputFile,
+    [string]$RootPath,
+    [switch]$Help,
+    [switch]$Usage,
+    [switch]$Silent,
+    [switch]$ErrorCodes,
+    [switch]$Version,
+    
+    [Parameter(ValueFromRemainingArguments = $true)]
+    [string[]]$RemainingArgs
+)
+
+$ScriptVersion = "0.3"
+
+function Write-Log {
+    param([string]$Message, [ConsoleColor]$Color = "Gray")
+    if (-not $Silent) {
+        Write-Host $Message -ForegroundColor $Color
+    }
+}
+
+# Error Code Output constants
+$indent = '      '  # 6 spaces
+$widthExit = 10
+$widthMeaning = 26
+$widthTrigger = 41
+
+function _WriteCells([string]$exit, [string]$meaning, [string]$trigger, [System.ConsoleColor]$TextColor = [System.ConsoleColor]::White, [System.ConsoleColor]$BorderColor = [System.ConsoleColor]::Green) {
+    $e = ($exit ?? '').PadRight($widthExit)
+    $m = ($meaning ?? '').PadRight($widthMeaning)
+    $t = ($trigger ?? '').PadRight($widthTrigger)
+    
+    Write-Host -NoNewline $indent
+    Write-Host -NoNewline -ForegroundColor $TextColor     $e
+    Write-Host -NoNewline -ForegroundColor $BorderColor ' | '
+    Write-Host -NoNewline -ForegroundColor $TextColor     $m
+    Write-Host -NoNewline -ForegroundColor $BorderColor ' | '
+    Write-Host -NoNewline -ForegroundColor $TextColor     $t
+    Write-Host ''
+}
+
+function _WriteBorder( [System.ConsoleColor]$BorderColor = [System.ConsoleColor]::Green) {
+    Write-Host -NoNewline $indent
+    Write-Host -NoNewline -ForegroundColor $BorderColor ('-' * ($widthExit + 1))
+    Write-Host -NoNewline -ForegroundColor $BorderColor '+'
+    Write-Host -NoNewline -ForegroundColor $BorderColor ('-' * ($widthMeaning + 2))
+    Write-Host -NoNewline -ForegroundColor $BorderColor '+'
+    Write-Host -NoNewline -ForegroundColor $BorderColor ('-' * ($widthTrigger + 2))
+    Write-Host ''
+}
+
+function Show-ErrorCodes ([System.ConsoleColor]$TextColor = [System.ConsoleColor]::White, [System.ConsoleColor]$BorderColor = [System.ConsoleColor]::Green) {
+    # Header
+    Write-Host ''
+    _WriteBorder $BorderColor
+    _WriteCells 'Exit Code' 'Meaning' 'Trigger Condition' $TextColor $BorderColor
+    _WriteBorder $BorderColor
+    
+    # Rows
+    _WriteCells '0' 'Success' '- SHA512 generation completed successfully' $TextColor $BorderColor
+    _WriteCells '' '' '- Validation completed with no issues' $TextColor $BorderColor
+    _WriteBorder $BorderColor
+    
+    _WriteCells '1' 'Usage / Parameter Error' '- Help or usage message shown' $TextColor $BorderColor
+    _WriteCells '' '' '- Unknown or invalid parameters passed' $TextColor $BorderColor
+    _WriteBorder $BorderColor
+    
+    _WriteCells '2' 'File/Folder Not Found' '- Target folder for generation not found' $TextColor $BorderColor
+    _WriteCells '' '' '- Hash file not found during validation' $TextColor $BorderColor
+    _WriteCells '' '' '- Hash file missing root header' $TextColor $BorderColor
+    _WriteCells '' '' '- Specified/inferred root folder not found' $TextColor $BorderColor
+    _WriteBorder $BorderColor
+    
+    _WriteCells '3' 'Validation Issues Found' '- Validation completed with problems:' $TextColor $BorderColor
+    Write-Host '' '' '    mismatched, missing, or extra files' $TextColor $BorderColor
+}
+
+function Show-Usage {
+    Write-Host "Usage:" -ForegroundColor Cyan
+    Write-Host "  Generate mode:" -ForegroundColor White
+    Write-Host "    .\hash.ps1 -Mode Generate -FolderPath <folder> [-OutputFile <path>] [-Silent] [-Usage | -Help] [-ErrorCodes] [-Version]" -ForegroundColor White
+    Write-Host "  Validate mode:" -ForegroundColor White
+    Write-Host "    .\hash.ps1 -Mode Validate -HashFile <file> [-RootPath <folder>] [-OutputFile <path>] [-Silent] [-Usage | -Help] [-ErrorCodes] [-Version]`n" -ForegroundColor White
+    exit 1
+}
+
+if ($RemainingArgs.Count -gt 0) {
+    Write-Host "ERROR: " -ForegroundColor Red -NoNewLine
+    Write-Host "Unknown parameter(s) passed: " -NoNewLine
+    Write-Host "$($RemainingArgs -join ', ')`n" -ForegroundColor Red
+    Show-Usage
+    exit 1
+}
+
+function Get-FileSHA512 {
+    param([string]$FilePath)
+    return (Get-FileHash -Path $FilePath -Algorithm SHA512).Hash.ToLower()
+}
+
+function Get-RelativePath {
+    param([string]$FullPath, [string]$BasePath)
+    return (Resolve-Path $FullPath).Path.Substring((Resolve-Path $BasePath).Path.Length).TrimStart("\")
+}
+
+function GenerateHashes {
+    param([string]$FolderPath, [string]$OutputFile)
+    
+    if (-not (Test-Path $FolderPath)) {
+        Write-Log "`nERROR: Folder '$FolderPath' not found!" -Color Red
+        exit 2
+    }
+    
+    $folder = Resolve-Path $FolderPath
+    if (-not $OutputFile) {
+        if (-not $OutputFile) { $OutputFile = "hash-$(Get-Date -Format 'yyyy-MM-dd_HH-mm-ss').txt" }
+    }
+    
+    Write-Log "`n=== SHA512 Generation ===" -Color Magenta
+    Write-Log "Source folder : $folder" -Color White
+    Write-Log "Output file   : $OutputFile`n" -Color White
+    
+    $results = @()
+    $results += "# Root: $((Split-Path $folder -Leaf))"
+    
+    $files = Get-ChildItem -Path $folder -File -Recurse
+    foreach ($file in $files) {
+        $relPath = Get-RelativePath -FullPath $file.FullName -BasePath $folder
+        $hash = Get-FileSHA512 $file.FullName
+        $results += "$hash|$relPath"
+        Write-Log "HASHED   : $relPath" -Color Green
+    }
+    
+    $results | Out-File -FilePath $OutputFile -Encoding utf8
+    Write-Log "`nHash file created: $OutputFile" -Color White
+    exit 0
+}
+
+function ValidateHashes {
+    param([string]$HashFile, [string]$RootPath, [string]$OutputFile)
+    
+    if (-not (Test-Path $HashFile)) {
+        Write-Log "`nERROR: Hash file '$HashFile' not found!" -Color Red
+        exit 2
+    }
+    
+    $fullHashFile = Resolve-Path $HashFile
+    $lines = Get-Content $fullHashFile
+    
+    # Determine root folder
+    if ($RootPath) {
+        $dataRoot = Resolve-Path $RootPath
+    }
+    else {
+        $rootHeader = $lines | Where-Object { $_ -match '^# Root:' }
+        if (-not $rootHeader) {
+            Write-Log "`nERROR: Hash file missing root header!" -Color Red
+            exit 2
+        }
+        $relativeRoot = $rootHeader -replace '^# Root:\s*', ''
+        $dataRoot = Join-Path (Split-Path $fullHashFile -Parent) $relativeRoot
+    }
+    
+    if (-not (Test-Path $dataRoot)) {
+        Write-Log "ERROR: Data root folder '$dataRoot' not found!" -Color Red
+        exit 2
+    }
+    
+    if (-not $OutputFile) { $OutputFile = "validate-$(Get-Date -Format 'yyyy-MM-dd_HH-mm-ss').txt" }
+    
+    Write-Log "`n=== SHA512 Validation ===" -Color Magenta
+    Write-Log "Hash file : $fullHashFile" -Color White
+    Write-Log "Data root : $dataRoot" -Color White
+    Write-Log "Output    : $OutputFile`n" -Color White
+    
+    $expectedFiles = @{}
+    $results = @()
+    $issuesFound = $false
+    
+    $okCount = 0
+    $failCount = 0
+    $missingCount = 0
+    $extraCount = 0
+    
+    # Validate expected files
+    foreach ($line in $lines) {
+        if ($line -like "#*") { continue }
+        $parts = $line -split "\|", 2
+        if ($parts.Count -ne 2) { continue }
+        
+        $expectedHash, $relPath = $parts
+        $expectedFiles[$relPath] = $true
+        
+        $filePath = Join-Path $dataRoot $relPath
+        
+        if (-not (Test-Path $filePath)) {
+            $msg = "MISSING : $relPath"
+            $results += $msg
+            $missingCount++
+            Write-Log $msg Yellow
+            $issuesFound = $true
+            continue
+        }
+        
+        $actualHash = Get-FileSHA512 $filePath
+        if ($actualHash -ne $expectedHash) {
+            $msg = "FAIL     : $relPath"
+            $results += $msg
+            $failCount++
+            Write-Log $msg Red
+            $issuesFound = $true
+        }
+        else {
+            $msg = "OK       : $relPath"
+            $results += $msg
+            $okCount++
+            Write-Log $msg Green
+        }
+    }
+    
+    # Detect extra files
+    $allFiles = Get-ChildItem -Path $dataRoot -File -Recurse
+    foreach ($file in $allFiles) {
+        $relPath = Get-RelativePath -FullPath $file.FullName -BasePath $dataRoot
+        if (-not $expectedFiles.ContainsKey($relPath)) {
+            $msg = "EXTRA    : $relPath"
+            $results += $msg
+            $extraCount++
+            Write-Log $msg Cyan
+            $issuesFound = $true
+        }
+    }
+    
+    # Add summary line
+    $results += ""
+    $results += "SUMMARY: OK=$okCount FAIL=$failCount MISSING=$missingCount EXTRA=$extraCount"
+    
+    # Always write ALL results
+    $results | Out-File -FilePath $OutputFile -Encoding utf8
+    Write-Log "`nValidation results saved to: $OutputFile" -Color White
+    
+    if ($issuesFound) {
+        Write-Log "`nValidation completed with issues." -Color Yellow
+        exit 3
+    }
+    else {
+        Write-Log "`nValidation completed successfully." -Color Green
+        exit 0
+    }
+}
+
+# === Main ===
+if ($ErrorCodes) {
+    Show-ErrorCodes -TextColor Gray -BorderColor DarkYellow
+    Show-Usage
+}
+
+if ($Version) {
+    $script_name = $MyInvocation.MyCommand.Name
+    Write-Host "Script Name: " -NoNewline -ForegroundColor Cyan
+    Write-Host $script_name
+    Write-Host "Version: " -NoNewline -ForegroundColor Cyan
+    Write-Host $ScriptVersion
+    Write-Host ''
+    
+    Show-Usage
+}
+
+if ($Help -or $Usage -or -not $Mode) {
+    Show-Usage
+}
+
+switch ($Mode.ToLower()) {
+    "generate" {
+        if (-not $FolderPath) { Show-Usage }
+        GenerateHashes -FolderPath $FolderPath -OutputFile $OutputFile
+    }
+    "validate" {
+        if (-not $HashFile) { Show-Usage }
+        ValidateHashes -HashFile $HashFile -RootPath $RootPath -OutputFile $OutputFile
+    }
+    default { Show-Usage }
+}

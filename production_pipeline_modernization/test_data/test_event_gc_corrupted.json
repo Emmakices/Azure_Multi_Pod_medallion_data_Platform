@@ -1,0 +1,18 @@
+[
+  {
+    "topic": "/subscriptions/e97fa8c6-457d-495f-aa82-0d87e72f5842/resourceGroups/rg-platform-dev/providers/Microsoft.Storage/storageAccounts/stdldevshared77b5h3",
+    "subject": "/blobServices/default/containers/test/blobs/gc_data_corrupted_2025-10-28.zip",
+    "eventType": "Microsoft.Storage.BlobCreated",
+    "eventTime": "2025-10-28T14:30:00.0000000Z",
+    "id": "gc-corrupted-test-12345",
+    "data": {
+      "api": "PutBlob",
+      "contentType": "application/x-zip-compressed",
+      "contentLength": 823,
+      "blobType": "BlockBlob",
+      "url": "https://stdldevshared77b5h3.blob.core.windows.net/test/gc_data_corrupted_2025-10-28.zip"
+    },
+    "dataVersion": "",
+    "metadataVersion": "1"
+  }
+]

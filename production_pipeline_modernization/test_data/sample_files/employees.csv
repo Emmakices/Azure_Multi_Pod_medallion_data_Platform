@@ -1,0 +1,11 @@
+EmployeeID,FirstName,LastName,Department,Position,HireDate,Status
+E001,John,Smith,Finance,Financial Analyst,2020-01-15,Active
+E002,Sarah,Johnson,Operations,Operations Manager,2019-03-22,Active
+E003,Michael,Williams,IT,Software Developer,2021-06-10,Active
+E004,Emily,Brown,HR,HR Specialist,2018-11-05,Active
+E005,David,Jones,Marketing,Marketing Coordinator,2022-02-28,Active
+E006,Jennifer,Davis,Finance,Senior Accountant,2017-09-12,Active
+E007,Robert,Miller,Operations,Operations Coordinator,2020-07-19,Active
+E008,Lisa,Wilson,IT,System Administrator,2019-12-03,Active
+E009,James,Moore,HR,Recruitment Manager,2016-05-21,Active
+E010,Mary,Taylor,Marketing,Marketing Director,2015-08-14,Active

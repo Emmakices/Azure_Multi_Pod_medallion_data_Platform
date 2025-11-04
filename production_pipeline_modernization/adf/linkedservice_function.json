@@ -1,0 +1,13 @@
+{
+  "name": "LS_AzureFunction",
+  "properties": {
+    "type": "AzureFunction",
+    "typeProperties": {
+      "functionAppUrl": "https://func-data-validation-dev.azurewebsites.net",
+      "functionKey": {
+        "type": "SecureString",
+        "value": "<REDACTED - Configure in Azure Portal>"
+      }
+    }
+  }
+}

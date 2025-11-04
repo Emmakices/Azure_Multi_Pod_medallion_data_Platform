@@ -1,0 +1,25 @@
+[
+  {
+    "topic": "/subscriptions/e97fa8c6-457d-495f-aa82-0d87e72f5842/resourceGroups/rg-platform-dev/providers/Microsoft.Storage/storageAccounts/stdldevshared77b5h3",
+    "subject": "/blobServices/default/containers/test/blobs/gc_corrupted_with_hash.zip",
+    "eventType": "Microsoft.Storage.BlobCreated",
+    "eventTime": "2025-10-29T17:35:00.0000000Z",
+    "id": "test-event-gc-corrupted-hash-inside",
+    "data": {
+      "api": "PutBlob",
+      "clientRequestId": "test-request-gc-corrupted-hash",
+      "requestId": "test-request-gc-corrupted-12345",
+      "eTag": "0x8D9F6C8B9E7F0A0",
+      "contentType": "application/x-zip-compressed",
+      "contentLength": 1350,
+      "blobType": "BlockBlob",
+      "url": "https://stdldevshared77b5h3.blob.core.windows.net/test/gc_corrupted_with_hash.zip",
+      "sequencer": "00000000000000000000000000000000000000000000000001",
+      "storageDiagnostics": {
+        "batchId": "test-batch-gc-corrupted-hash"
+      }
+    },
+    "dataVersion": "",
+    "metadataVersion": "1"
+  }
+]

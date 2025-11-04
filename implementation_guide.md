@@ -48,7 +48,7 @@ Set up Azure CLI authentication and verify you have the correct subscription acc
 
 **Outcome**: Azure CLI configured and authenticated
 
-**Return here when done**: DONE
+**Return here when done**: ✓
 
 ---
 
@@ -66,7 +66,7 @@ Create the Terraform project structure with organized modules for storage, datab
 
 **Outcome**: Terraform project structure ready
 
-**Return here when done**: DONE
+**Return here when done**: ✓
 
 ---
 
@@ -85,7 +85,7 @@ Configure Git to ignore sensitive files and set up Azure Blob Storage backend fo
 
 **Outcome**: Terraform state stored securely in Azure
 
-**Return here when done**: DONE
+**Return here when done**: ✓
 
 ---
 
@@ -104,7 +104,7 @@ Configure Terraform providers (Azure, Databricks) and create the main.tf that or
 
 **Outcome**: Terraform providers configured and ready to deploy
 
-**Return here when done**: DONE
+**Return here when done**: ✓
 
 ---
 
@@ -122,7 +122,7 @@ Deploy Azure Log Analytics workspace for monitoring and diagnostics across all r
 
 **Outcome**: Monitoring infrastructure deployed
 
-**Return here when done**: DONE
+**Return here when done**: ✓
 
 ---
 
@@ -143,7 +143,7 @@ Deploy shared blob storage (landing zone) and ADLS Gen2 (bronze, silver, gold la
 
 **Outcome**: All storage layers deployed and ready
 
-**Return here when done**: DONE
+**Return here when done**: ✓
 
 ---
 
@@ -162,7 +162,7 @@ Deploy Azure Data Factory for pipeline orchestration with managed identity and g
 
 **Outcome**: Azure Data Factory deployed
 
-**Return here when done**: DONE
+**Return here when done**: ✓
 
 ---
 
@@ -181,7 +181,7 @@ Deploy Databricks workspace with secure cluster policies and workspace configura
 
 **Outcome**: Databricks workspace deployed
 
-**Return here when done**: DONE
+**Return here when done**: 
 
 ---
 
@@ -200,7 +200,7 @@ Run terraform apply to deploy all infrastructure and verify successful deploymen
 
 **Outcome**: Complete infrastructure deployed in Azure
 
-**Return here when done**: DONE
+**Return here when done**: ✓
 
 ---
 
@@ -220,7 +220,7 @@ Configure Databricks secrets scope and add storage account keys for secure acces
 
 **Outcome**: Databricks can securely access storage
 
-**Return here when done**: DONE
+**Return here when done**: ✓
 
 ---
 
@@ -238,7 +238,7 @@ Configure storage authentication in Databricks notebooks using secrets.
 
 **Outcome**: Databricks notebooks can read/write to storage
 
-**Return here when done**: DONE
+**Return here when done**: ✓
 
 ---
 
@@ -256,7 +256,7 @@ Request quota increases for Databricks clusters if you encounter limits.
 
 **Outcome**: Sufficient quotas for cluster creation
 
-**Return here when done**: DONE
+**Return here when done**: ✓
 
 ---
 
@@ -276,7 +276,7 @@ Manually create a test cluster in Databricks UI. Note: Production uses ephemeral
 
 **Note**: Production pipelines use ephemeral job clusters, not this manual cluster.
 
-**Return here when done**: DONE
+**Return here when done**: ✓
 
 ---
 
@@ -297,7 +297,7 @@ Create the company configuration table in Gold layer that drives the entire pipe
 
 **Outcome**: Configuration table drives dynamic pipeline execution
 
-**Return here when done**: DONE
+**Return here when done**: ✓
 
 ---
 
@@ -315,7 +315,7 @@ Upload the core shared utility notebook (completeness check) to Databricks works
 
 **Outcome**: Shared utility notebook available
 
-**Return here when done**: DONE
+**Return here when done**: ✓
 
 ---
 
@@ -341,7 +341,7 @@ Understand the enterprise pod-specific notebook architecture and upload notebook
 - `/Shared/podC/bronze_to_silver`
 - `/Shared/podC/silver_to_gold`
 
-**Return here when done**: DONE
+**Return here when done**: ✓
 
 ---
 
@@ -362,7 +362,7 @@ Understand the complete architecture: files wait in Bronze until all domains are
 
 **Outcome**: Deep understanding of the architecture
 
-**Return here when done**: DONE
+**Return here when done**: ✓
 
 ---
 
@@ -372,8 +372,6 @@ Understand the complete architecture: files wait in Bronze until all domains are
 
 **Summary**:
 Build the Azure Data Factory pipeline that orchestrates the entire data flow from landing to gold layer.
-
-**Important**: Step 9a in the guide has detailed troubleshooting for creating the archive dataset - don't skip it!
 
 **What You'll Do**:
 - Create pipeline: MultiPod_DataLake_Orchestration
@@ -395,7 +393,7 @@ Build the Azure Data Factory pipeline that orchestrates the entire data flow fro
 
 **Outcome**: Complete ADF pipeline orchestrating all data flows
 
-**Return here when done**: DONE
+**Return here when done**: ✓
 
 ---
 
@@ -414,7 +412,7 @@ Update ADF pipeline to use dynamic pod-specific notebook paths instead of shared
 
 **Outcome**: ADF calls correct pod-specific notebooks
 
-**Return here when done**: DONE
+**Return here when done**: ✓
 
 ---
 
@@ -435,7 +433,7 @@ Update ADF pipeline to use dynamic pod-specific notebook paths instead of shared
 
 **Expected Result**: File waits in Bronze, no processing occurs
 
-**Return here when done**: DONE
+**Return here when done**: ✓
 
 ---
 
@@ -462,7 +460,7 @@ Update ADF pipeline to use dynamic pod-specific notebook paths instead of shared
 
 **Expected Result**: Both domains processed independently in parallel
 
-**Return here when done**: DONE
+**Return here when done**: ✓
 
 ---
 
@@ -479,7 +477,7 @@ Update ADF pipeline to use dynamic pod-specific notebook paths instead of shared
 
 **Expected Result**: Pods are completely isolated
 
-**Return here when done**: DONE
+**Return here when done**: ✓
 
 ---
 
@@ -497,7 +495,7 @@ Update ADF pipeline to use dynamic pod-specific notebook paths instead of shared
 
 **Expected Result**: Granular cost tracking by pod, company, domain
 
-**Return here when done**: DONE
+**Return here when done**: ✓
 
 ---
 
@@ -517,7 +515,7 @@ Review complete setup and verify all components are working together.
 
 **Outcome**: Production-ready platform
 
-**Return here when done**: DONE
+**Return here when done**: ✓
 
 ---
 
@@ -535,7 +533,7 @@ Review the complete technical architecture documentation for future reference.
 
 **Outcome**: Complete understanding of the platform
 
-**Return here when done**: DONE
+**Return here when done**: ✓
 
 ---
 
@@ -553,7 +551,7 @@ Review the complete technical architecture documentation for future reference.
 
 **Outcome**: Enterprise governance in place
 
-**Return here when done**: DONE
+**Return here when done**: ✓
 
 ---
 
@@ -611,120 +609,13 @@ Review the complete technical architecture documentation for future reference.
 
 ---
 
-## Phase 7: Enterprise Monitoring and Governance (Optional)
-
-### Step 27: Deploy Enterprise Features
-
-**Document**: `docs/27-enterprise-monitoring-and-governance.md`
-**Quick Start**: `deployment_summary.md` - Complete deployment guide
-
-**Summary**:
-Deploy advanced enterprise features for monitoring, governance, and cost management.
-
-**What You'll Do**:
-- Create data lineage tracking table
-- Create data quality rules log table
-- Create SLA monitoring table
-- Create cost tracking table
-- Create alert rules configuration
-- Create retry policy and archive log tables
-- Upload logging helper notebooks
-- Integrate with ADF pipeline (optional)
-
-**Why Build These**:
-- **Data Lineage**: Regulatory compliance, trace source to Gold
-- **Quality Log**: Monitor data quality trends, early detection
-- **SLA Monitoring**: Ensure business commitments met
-- **Cost Tracking**: Monthly chargeback to business units
-- **Alert Rules**: Dynamic alert configuration
-- **Retry Policy**: Handle transient failures gracefully
-- **Archive Log**: Audit trail for file retention
-
-**Tables Created**:
-- `gold/config/data_lineage`
-- `gold/config/data_quality_log`
-- `gold/config/sla_monitoring`
-- `gold/config/cost_tracking`
-- `gold/config/alert_rules`
-- `gold/config/retry_policy`
-- `gold/config/archive_log`
-
-**Helper Notebooks**:
-- `log_data_lineage.py` - Log lineage at Bronze/Silver/Gold
-- (More to be built as needed)
-
-**Benefits**:
-- Complete audit trail for compliance
-- Data quality monitoring and trending
-- SLA compliance reporting
-- Accurate cost attribution and chargeback
-- Operational resilience with retries
-- Flexible alert management
-
-**Outcome**: Enterprise-grade monitoring and governance in place
-
-**Deployment Status**: Notebooks uploaded to Databricks - tables ready to create
-**See**: `deployment_summary.md` for manual table creation steps
-
-**Return here when done**: PENDING
-
----
-
-## Completion Checklist
-
-### Infrastructure
-- [x] Azure authentication configured
-- [x] Terraform infrastructure deployed
-- [x] Blob storage (landing) created
-- [x] ADLS Gen2 (bronze, silver, gold) created
-- [x] Azure Data Factory deployed
-- [x] Databricks workspace deployed
-
-### Configuration
-- [x] Databricks secrets configured
-- [x] Storage authentication working
-- [x] Company configuration table created
-- [x] Core notebooks uploaded
-- [x] Pod-specific notebooks uploaded
-
-### Pipeline
-- [x] ADF pipeline created
-- [x] Pod-specific notebook paths configured
-- [x] Completeness check implemented
-- [x] ForEach_Domain loop working
-
-### Enterprise Features (Optional)
-- [ ] Data lineage table created
-- [ ] Data quality log table created
-- [ ] SLA monitoring table created
-- [ ] Cost tracking table created
-- [ ] Alert rules configured
-- [ ] Retry policy configured
-- [ ] Archive log table created
-
-### Testing
-- [ ] First file waits (INCOMPLETE scenario) - tested
-- [ ] Both files process (COMPLETE scenario) - tested
-- [ ] Pod isolation verified
-- [ ] Cost tracking verified
-- [ ] End-to-end data flow validated
-
-### Governance
-- [ ] Workspace permissions configured
-- [ ] Git integration set up
-- [ ] Pod teams trained
-- [ ] Cost management views configured
-
----
-
 ## Project Status
 
-**Infrastructure**: COMPLETED: Deployed
-**Notebooks**: COMPLETED: Uploaded
-**Pipeline**: PENDING To be built (Step 18)
-**Enterprise Features**: COMPLETED: Ready to deploy (Step 27)
-**Testing**: PENDING To be done (Steps 20-23)
-**Production**: PENDING Pending testing completion
+**Infrastructure**: ✓ Deployed
+**Notebooks**: ✓ Uploaded
+**Pipeline**: ⏳ To be built (Step 18)
+**Testing**: ⏳ To be done (Steps 20-23)
+**Production**: ⏳ Pending testing completion
 
 **Current Step**: Phase 4, Step 18 - Build ADF Pipeline
 
@@ -734,7 +625,6 @@ Deploy advanced enterprise features for monitoring, governance, and cost managem
 
 1. **Start at Step 1** if building from scratch
 2. **Jump to Step 18** if infrastructure already deployed
-3. **Add enterprise features** with Step 27 (optional but recommended)
-4. **Review architecture documents** first if you want to understand before building
+3. **Review architecture documents** first if you want to understand before building
 
 This is an enterprise-ready POC with professional architecture, clear governance, and production-quality design.

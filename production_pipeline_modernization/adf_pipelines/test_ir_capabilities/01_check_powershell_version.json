@@ -1,0 +1,42 @@
+{
+    "name": "Test_CheckPowerShellVersion",
+    "properties": {
+        "description": "Test pipeline to check PowerShell version on self-hosted IR",
+        "activities": [
+            {
+                "name": "CheckPowerShellVersion",
+                "type": "Script",
+                "dependsOn": [],
+                "policy": {
+                    "timeout": "0.00:05:00",
+                    "retry": 0,
+                    "retryIntervalInSeconds": 30,
+                    "secureOutput": false,
+                    "secureInput": false
+                },
+                "userProperties": [],
+                "linkedServiceName": {
+                    "referenceName": "SelfHostedIR_LinkedService",
+                    "type": "LinkedServiceReference"
+                },
+                "typeProperties": {
+                    "scriptBlockExecutionTimeout": "00:05:00",
+                    "scripts": [
+                        {
+                            "type": "Query",
+                            "text": "# Check PowerShell Version\nWrite-Host \"=== PowerShell Version Check ===\"\nWrite-Host \"PowerShell Version: $($PSVersionTable.PSVersion)\"\nWrite-Host \"PowerShell Edition: $($PSVersionTable.PSEdition)\"\nWrite-Host \"OS: $($PSVersionTable.OS)\"\nWrite-Host \"Platform: $($PSVersionTable.Platform)\"\n\n# Check if we can create temp folders\n$tempTest = Join-Path $env:TEMP \"adf_test_$(Get-Date -Format 'yyyyMMdd_HHmmss')\"\nNew-Item -ItemType Directory -Path $tempTest -Force | Out-Null\nWrite-Host \"Temp folder creation: SUCCESS ($tempTest)\"\nRemove-Item -Path $tempTest -Force\nWrite-Host \"Temp folder cleanup: SUCCESS\"\n\n# Check available disk space\n$drive = Get-PSDrive -Name C\nWrite-Host \"C: Drive Free Space: $([math]::Round($drive.Free / 1GB, 2)) GB\"\n\n# Check if Expand-Archive is available (for ZIP extraction)\nif (Get-Command Expand-Archive -ErrorAction SilentlyContinue) {\n    Write-Host \"Expand-Archive (ZIP extraction): AVAILABLE\"\n} else {\n    Write-Host \"Expand-Archive (ZIP extraction): NOT AVAILABLE\"\n}\n\n# Check if Get-FileHash is available (for SHA512)\nif (Get-Command Get-FileHash -ErrorAction SilentlyContinue) {\n    Write-Host \"Get-FileHash (SHA512): AVAILABLE\"\n} else {\n    Write-Host \"Get-FileHash (SHA512): NOT AVAILABLE\"\n}\n\nWrite-Host \"=== Test Complete ===\""
+                        }
+                    ],
+                    "scriptType": "NonQuery",
+                    "logSettings": {
+                        "logDestination": "ActivityOutput"
+                    }
+                }
+            }
+        ],
+        "folder": {
+            "name": "TestIRCapabilities"
+        },
+        "annotations": []
+    }
+}

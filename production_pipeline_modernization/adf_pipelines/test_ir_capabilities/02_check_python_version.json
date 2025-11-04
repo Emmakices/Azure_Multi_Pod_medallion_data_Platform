@@ -1,0 +1,42 @@
+{
+    "name": "Test_CheckPythonVersion",
+    "properties": {
+        "description": "Test pipeline to check Python version on self-hosted IR",
+        "activities": [
+            {
+                "name": "CheckPythonVersion",
+                "type": "Script",
+                "dependsOn": [],
+                "policy": {
+                    "timeout": "0.00:05:00",
+                    "retry": 0,
+                    "retryIntervalInSeconds": 30,
+                    "secureOutput": false,
+                    "secureInput": false
+                },
+                "userProperties": [],
+                "linkedServiceName": {
+                    "referenceName": "SelfHostedIR_LinkedService",
+                    "type": "LinkedServiceReference"
+                },
+                "typeProperties": {
+                    "scriptBlockExecutionTimeout": "00:05:00",
+                    "scripts": [
+                        {
+                            "type": "Query",
+                            "text": "import sys\nimport os\nimport platform\nimport tempfile\n\nprint(\"=== Python Version Check ===\")\nprint(f\"Python Version: {sys.version}\")\nprint(f\"Python Executable: {sys.executable}\")\nprint(f\"Platform: {platform.platform()}\")\nprint(f\"Architecture: {platform.architecture()}\")\n\n# Check if we can create temp folders\ntry:\n    temp_dir = tempfile.mkdtemp(prefix=\"adf_test_\")\n    print(f\"Temp folder creation: SUCCESS ({temp_dir})\")\n    os.rmdir(temp_dir)\n    print(\"Temp folder cleanup: SUCCESS\")\nexcept Exception as e:\n    print(f\"Temp folder test: FAILED - {e}\")\n\n# Check for required modules\nmodules_to_check = ['zipfile', 'hashlib', 'json', 'os', 'shutil']\nprint(\"\\n=== Required Modules ===\")\nfor module in modules_to_check:\n    try:\n        __import__(module)\n        print(f\"{module}: AVAILABLE\")\n    except ImportError:\n        print(f\"{module}: NOT AVAILABLE\")\n\n# Check for azure-storage-blob (optional but useful)\ntry:\n    __import__('azure.storage.blob')\n    print(\"azure-storage-blob: AVAILABLE\")\nexcept ImportError:\n    print(\"azure-storage-blob: NOT AVAILABLE (can be installed if needed)\")\n\nprint(\"=== Test Complete ===\")"
+                        }
+                    ],
+                    "scriptType": "NonQuery",
+                    "logSettings": {
+                        "logDestination": "ActivityOutput"
+                    }
+                }
+            }
+        ],
+        "folder": {
+            "name": "TestIRCapabilities"
+        },
+        "annotations": []
+    }
+}

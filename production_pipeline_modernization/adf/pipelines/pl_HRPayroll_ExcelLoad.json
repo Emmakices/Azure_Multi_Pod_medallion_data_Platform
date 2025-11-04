@@ -1,0 +1,239 @@
+{
+  "name": "pl_HRPayroll_ExcelLoad",
+  "properties": {
+    "description": "Complete pipeline to extract multi-sheet Excel files and load to SQL database",
+    "activities": [
+      {
+        "name": "UnzipFiles",
+        "type": "AzureFunctionActivity",
+        "dependsOn": [],
+        "policy": {
+          "timeout": "0.00:10:00",
+          "retry": 2,
+          "retryIntervalInSeconds": 30
+        },
+        "typeProperties": {
+          "functionName": "UnzipFiles",
+          "method": "POST",
+          "body": {
+            "zipBlob": "@pipeline().parameters.zipFileName",
+            "sourceContainer": "landingtest",
+            "targetContainer": "staging"
+          }
+        },
+        "linkedServiceName": {
+          "referenceName": "LS_AzureFunction",
+          "type": "LinkedServiceReference"
+        }
+      },
+      {
+        "name": "ForEachAllSheets",
+        "type": "ForEach",
+        "dependsOn": [
+          {
+            "activity": "UnzipFiles",
+            "dependencyConditions": ["Succeeded"]
+          }
+        ],
+        "typeProperties": {
+          "items": {
+            "value": "@variables('allSheets')",
+            "type": "Expression"
+          },
+          "isSequential": false,
+          "batchCount": 10,
+          "activities": [
+            {
+              "name": "CopySheetToSQL",
+              "type": "Copy",
+              "typeProperties": {
+                "source": {
+                  "type": "ExcelSource",
+                  "storeSettings": {
+                    "type": "AzureBlobStorageReadSettings",
+                    "recursive": false,
+                    "enablePartitionDiscovery": false
+                  }
+                },
+                "sink": {
+                  "type": "AzureSqlSink",
+                  "writeBehavior": "insert",
+                  "sqlWriterUseTableLock": false,
+                  "disableMetricsCollection": false
+                },
+                "enableStaging": false,
+                "dataIntegrationUnits": 4,
+                "translator": {
+                  "type": "TabularTranslator",
+                  "typeConversion": true,
+                  "typeConversionSettings": {
+                    "allowDataTruncation": true,
+                    "treatBooleanAsNumber": false
+                  },
+                  "mappings": [],
+                  "mapComplexValuesToString": false
+                }
+              },
+              "inputs": [
+                {
+                  "referenceName": "ds_excel_source",
+                  "type": "DatasetReference",
+                  "parameters": {
+                    "company": "@item().company",
+                    "fileName": "@item().fileName",
+                    "sheetName": "@item().sheetName"
+                  }
+                }
+              ],
+              "outputs": [
+                {
+                  "referenceName": "ds_sql_sink",
+                  "type": "DatasetReference",
+                  "parameters": {
+                    "tableName": "@item().tableName"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      },
+      {
+        "name": "CopyToProcessed",
+        "type": "ForEach",
+        "dependsOn": [
+          {
+            "activity": "ForEachAllSheets",
+            "dependencyConditions": ["Succeeded"]
+          }
+        ],
+        "typeProperties": {
+          "items": {
+            "value": "@variables('filesToCopy')",
+            "type": "Expression"
+          },
+          "isSequential": false,
+          "batchCount": 4,
+          "activities": [
+            {
+              "name": "CopyFileToProcessed",
+              "type": "Copy",
+              "typeProperties": {
+                "source": {
+                  "type": "BinarySource",
+                  "storeSettings": {
+                    "type": "AzureBlobStorageReadSettings",
+                    "recursive": false
+                  }
+                },
+                "sink": {
+                  "type": "BinarySink",
+                  "storeSettings": {
+                    "type": "AzureBlobStorageWriteSettings"
+                  }
+                },
+                "enableStaging": false
+              },
+              "inputs": [
+                {
+                  "referenceName": "ds_staging_binary",
+                  "type": "DatasetReference",
+                  "parameters": {
+                    "company": "@item().company",
+                    "fileName": "@item().fileName"
+                  }
+                }
+              ],
+              "outputs": [
+                {
+                  "referenceName": "ds_processed_binary",
+                  "type": "DatasetReference",
+                  "parameters": {
+                    "company": "@item().company",
+                    "department": "@item().department",
+                    "fileName": "@item().fileName"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      },
+      {
+        "name": "CleanupStaging",
+        "type": "Delete",
+        "dependsOn": [
+          {
+            "activity": "CopyToProcessed",
+            "dependencyConditions": ["Succeeded"]
+          }
+        ],
+        "policy": {
+          "timeout": "0.00:05:00",
+          "retry": 2,
+          "retryIntervalInSeconds": 30
+        },
+        "typeProperties": {
+          "dataset": {
+            "referenceName": "ds_staging_binary",
+            "type": "DatasetReference",
+            "parameters": {
+              "company": "*",
+              "fileName": "*"
+            }
+          },
+          "enableLogging": false,
+          "storeSettings": {
+            "type": "AzureBlobStorageReadSettings",
+            "recursive": true,
+            "wildcardFolderPath": "*",
+            "wildcardFileName": "*",
+            "enablePartitionDiscovery": false
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "zipFileName": {
+        "type": "string",
+        "defaultValue": "hr_payroll_data.zip"
+      }
+    },
+    "variables": {
+      "allSheets": {
+        "type": "Array",
+        "defaultValue": [
+          {"company": "company_A", "fileName": "hr_data.xlsx", "sheetName": "Employees", "tableName": "HR_Employees"},
+          {"company": "company_A", "fileName": "hr_data.xlsx", "sheetName": "Departments", "tableName": "HR_Departments"},
+          {"company": "company_A", "fileName": "hr_data.xlsx", "sheetName": "Positions", "tableName": "HR_Positions"},
+          {"company": "company_A", "fileName": "hr_data.xlsx", "sheetName": "Locations", "tableName": "HR_Locations"},
+          {"company": "company_A", "fileName": "hr_data.xlsx", "sheetName": "Performance", "tableName": "HR_Performance"},
+          {"company": "company_A", "fileName": "payroll_data.xlsx", "sheetName": "Salaries", "tableName": "Payroll_Salaries"},
+          {"company": "company_A", "fileName": "payroll_data.xlsx", "sheetName": "Bonuses", "tableName": "Payroll_Bonuses"},
+          {"company": "company_A", "fileName": "payroll_data.xlsx", "sheetName": "Deductions", "tableName": "Payroll_Deductions"},
+          {"company": "company_A", "fileName": "payroll_data.xlsx", "sheetName": "Benefits", "tableName": "Payroll_Benefits"},
+          {"company": "company_A", "fileName": "payroll_data.xlsx", "sheetName": "Timesheets", "tableName": "Payroll_Timesheets"},
+          {"company": "company_B", "fileName": "hr_data.xlsx", "sheetName": "Employees", "tableName": "HR_Employees"},
+          {"company": "company_B", "fileName": "hr_data.xlsx", "sheetName": "Departments", "tableName": "HR_Departments"},
+          {"company": "company_B", "fileName": "hr_data.xlsx", "sheetName": "Positions", "tableName": "HR_Positions"},
+          {"company": "company_B", "fileName": "hr_data.xlsx", "sheetName": "Locations", "tableName": "HR_Locations"},
+          {"company": "company_B", "fileName": "hr_data.xlsx", "sheetName": "Performance", "tableName": "HR_Performance"},
+          {"company": "company_B", "fileName": "payroll_data.xlsx", "sheetName": "Salaries", "tableName": "Payroll_Salaries"},
+          {"company": "company_B", "fileName": "payroll_data.xlsx", "sheetName": "Bonuses", "tableName": "Payroll_Bonuses"},
+          {"company": "company_B", "fileName": "payroll_data.xlsx", "sheetName": "Deductions", "tableName": "Payroll_Deductions"},
+          {"company": "company_B", "fileName": "payroll_data.xlsx", "sheetName": "Benefits", "tableName": "Payroll_Benefits"},
+          {"company": "company_B", "fileName": "payroll_data.xlsx", "sheetName": "Timesheets", "tableName": "Payroll_Timesheets"}
+        ]
+      },
+      "filesToCopy": {
+        "type": "Array",
+        "defaultValue": [
+          {"company": "company_A", "fileName": "hr_data.xlsx", "department": "HR"},
+          {"company": "company_A", "fileName": "payroll_data.xlsx", "department": "Payroll"},
+          {"company": "company_B", "fileName": "hr_data.xlsx", "department": "HR"},
+          {"company": "company_B", "fileName": "payroll_data.xlsx", "department": "Payroll"}
+        ]
+      }
+    }
+  }
+}

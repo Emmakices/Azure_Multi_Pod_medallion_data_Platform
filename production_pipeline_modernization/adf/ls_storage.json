@@ -1,0 +1,6 @@
+{
+  "type": "AzureBlobStorage",
+  "typeProperties": {
+    "connectionString": "DefaultEndpointsProtocol=https;AccountName=stteststorage2025;AccountKey=<REDACTED>;EndpointSuffix=core.windows.net"
+  }
+}

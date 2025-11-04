@@ -1,0 +1,38 @@
+{
+  "name": "ds_excel_source",
+  "type": "Excel",
+  "linkedServiceName": {
+    "referenceName": "LS_BlobStorage",
+    "type": "LinkedServiceReference"
+  },
+  "parameters": {
+    "company": {
+      "type": "string"
+    },
+    "fileName": {
+      "type": "string"
+    },
+    "sheetName": {
+      "type": "string"
+    }
+  },
+  "typeProperties": {
+    "location": {
+      "type": "AzureBlobStorageLocation",
+      "fileName": {
+        "value": "@dataset().fileName",
+        "type": "Expression"
+      },
+      "folderPath": {
+        "value": "@dataset().company",
+        "type": "Expression"
+      },
+      "container": "staging"
+    },
+    "sheetName": {
+      "value": "@dataset().sheetName",
+      "type": "Expression"
+    },
+    "firstRowAsHeader": true
+  }
+}

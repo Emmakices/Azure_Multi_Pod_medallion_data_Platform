@@ -265,8 +265,8 @@ function ValidateHashes {
         }
     }
 
-    # Detect extra files (exclude .hash files)
-    $allFiles = Get-ChildItem -Path $dataRoot -File -Recurse | Where-Object { $_.Extension -ne '.hash' }
+    # Detect extra files
+    $allFiles = Get-ChildItem -Path $dataRoot -File -Recurse
     foreach ($file in $allFiles) {
         $relPath = Get-RelativePath -FullPath $file.FullName -BasePath $dataRoot
         if (-not $expectedFiles.ContainsKey($relPath)) {

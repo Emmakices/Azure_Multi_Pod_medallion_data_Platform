@@ -1,0 +1,23 @@
+{
+  "name": "ds_landing_zip",
+  "type": "Binary",
+  "linkedServiceName": {
+    "referenceName": "LS_BlobStorage",
+    "type": "LinkedServiceReference"
+  },
+  "parameters": {
+    "zipFileName": {
+      "type": "string"
+    }
+  },
+  "typeProperties": {
+    "location": {
+      "type": "AzureBlobStorageLocation",
+      "fileName": {
+        "value": "@dataset().zipFileName",
+        "type": "Expression"
+      },
+      "container": "landingtest"
+    }
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "name": "ds_sql_sink",
+  "type": "AzureSqlTable",
+  "linkedServiceName": {
+    "referenceName": "LS_AzureSqlDatabase",
+    "type": "LinkedServiceReference"
+  },
+  "parameters": {
+    "tableName": {
+      "type": "string"
+    }
+  },
+  "typeProperties": {
+    "schema": "dbo",
+    "table": {
+      "value": "@dataset().tableName",
+      "type": "Expression"
+    }
+  }
+}

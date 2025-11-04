@@ -1,12 +1,11 @@
 # Databricks notebook source
 # MAGIC %md
-# MAGIC # Check Bronze Completeness
-# MAGIC **Purpose**: Check if ALL required domain files are present in Bronze before processing
-# MAGIC **Returns**: COMPLETE or INCOMPLETE status
+# MAGIC # Bronze Completeness Check
+# MAGIC Checks if ALL required domain files are present in Bronze before processing
 
 # COMMAND ----------
 
-# Configure storage access using Databricks Secrets
+# Configure storage access
 storage_key = dbutils.secrets.get(scope="storage-keys", key="datalake-key")
 spark.conf.set(
     "fs.azure.account.key.stdldevshared77b5h3.dfs.core.windows.net",
@@ -15,10 +14,10 @@ spark.conf.set(
 
 # COMMAND ----------
 
-# Get parameters from ADF
+# Get parameters
 dbutils.widgets.text("pod_id", "podA", "Pod ID")
 dbutils.widgets.text("company", "finance", "Company")
-dbutils.widgets.text("required_domains", '["hr", "payroll"]', "Required Domains (JSON array)")
+dbutils.widgets.text("required_domains", '["hr", "payroll"]', "Required Domains")
 dbutils.widgets.text("storage_account", "stdldevshared77b5h3", "Storage Account")
 
 pod_id = dbutils.widgets.get("pod_id")
@@ -30,88 +29,59 @@ storage_account = dbutils.widgets.get("storage_account")
 import json
 required_domains = json.loads(required_domains_str)
 
-print(f"Checking completeness for: {pod_id}/{company}")
+print(f"Checking Bronze completeness for: {pod_id}/{company}")
 print(f"Required domains: {required_domains}")
 
 # COMMAND ----------
 
-# MAGIC %md
-# MAGIC ## Check Bronze for All Required Domains
-
-# COMMAND ----------
-
+# Check which domains exist in Bronze
 bronze_base = f"abfss://bronze@{storage_account}.dfs.core.windows.net/{pod_id}/{company}/"
-print(f"Checking Bronze: {bronze_base}")
+print(f"Bronze path: {bronze_base}")
 
 missing_domains = []
 found_domains = []
 
 for domain in required_domains:
+    domain_path = f"{bronze_base}{domain}/"
     try:
-        # List all files/folders in Bronze for this company
-        items = dbutils.fs.ls(bronze_base)
+        files = dbutils.fs.ls(domain_path)
+        # Check if there are any CSV or Parquet files
+        data_files = [f for f in files if f.name.endswith('.csv') or f.name.endswith('.parquet')]
 
-        # Check if domain exists as:
-        # 1. A folder (e.g., hr/)
-        # 2. Files with domain prefix (e.g., hr_employees.csv)
-        domain_present = False
-
-        for item in items:
-            item_name = item.name.lower()
-            # Check for folder match (e.g., "hr/")
-            if item_name == f"{domain}/" or item_name.startswith(f"{domain}/"):
-                domain_present = True
-                break
-            # Check for file match (e.g., "hr_employees.csv")
-            if item_name.startswith(f"{domain}_"):
-                domain_present = True
-                break
-
-        if domain_present:
+        if len(data_files) > 0:
             found_domains.append(domain)
-            print(f"[DONE] Found {domain} in Bronze")
+            print(f"[OK] Found {domain}: {len(data_files)} file(s)")
         else:
             missing_domains.append(domain)
-            print(f"[WARNING] Missing {domain} in Bronze")
-
+            print(f"[X] Missing {domain}: No data files")
     except Exception as e:
         missing_domains.append(domain)
-        print(f"[ERROR] Missing {domain} in Bronze: {str(e)}")
-
-print(f"\nSummary: {len(found_domains)}/{len(required_domains)} domains present")
+        print(f"[X] Missing {domain}: Path doesn't exist")
 
 # COMMAND ----------
 
-# MAGIC %md
-# MAGIC ## Return Result
-
-# COMMAND ----------
-
+# Return result
 if len(missing_domains) > 0:
     # INCOMPLETE - return empty array so ForEach doesn't run
-    domains_to_process = []
-    result = {
-        "status": "INCOMPLETE",
-        "domains_to_process": domains_to_process,
-        "missing_domains": missing_domains,
-        "found_domains": found_domains,
-        "message": f"Waiting for {len(missing_domains)} domain(s): {missing_domains}"
-    }
-    print(f"\n[PAUSED] INCOMPLETE: {result['message']}")
-    print(f"[INFO] Files will WAIT in Bronze until all domains arrive")
+    result = []
+    status = "INCOMPLETE"
+    message = f"Waiting for {missing_domains}. Found {found_domains}."
+    print(f"[PAUSED] {message}")
 else:
     # COMPLETE - return domains array so ForEach processes them
-    domains_to_process = required_domains
-    result = {
-        "status": "COMPLETE",
-        "domains_to_process": domains_to_process,
-        "found_domains": found_domains,
-        "missing_domains": [],
-        "message": f"All {len(required_domains)} domains present. Ready to process."
-    }
-    print(f"\n[DONE] COMPLETE: {result['message']}")
-    print(f"[INFO] Will process domains: {domains_to_process}")
+    result = required_domains
+    status = "COMPLETE"
+    message = f"All {len(required_domains)} domains present. Ready to process."
+    print(f"[OK] {message}")
 
-# Return JSON result
-print(f"\nReturning: {json.dumps(result, indent=2)}")
-dbutils.notebook.exit(json.dumps(result))
+# Return as JSON
+output = {
+    "status": status,
+    "domains_to_process": result,
+    "missing_domains": missing_domains,
+    "found_domains": found_domains,
+    "message": message
+}
+
+print(f"\nReturning to ADF: {json.dumps(output)}")
+dbutils.notebook.exit(json.dumps(output))

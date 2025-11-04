@@ -1,0 +1,36 @@
+{
+  "name": "ds_processed_binary",
+  "properties": {
+    "linkedServiceName": {
+      "referenceName": "LS_BlobStorage",
+      "type": "LinkedServiceReference"
+    },
+    "parameters": {
+      "company": {
+        "type": "string"
+      },
+      "department": {
+        "type": "string"
+      },
+      "fileName": {
+        "type": "string"
+      }
+    },
+    "annotations": [],
+    "type": "Binary",
+    "typeProperties": {
+      "location": {
+        "type": "AzureBlobStorageLocation",
+        "fileName": {
+          "value": "@dataset().fileName",
+          "type": "Expression"
+        },
+        "folderPath": {
+          "value": "@concat(dataset().company, '/', dataset().department)",
+          "type": "Expression"
+        },
+        "container": "processed-test"
+      }
+    }
+  }
+}

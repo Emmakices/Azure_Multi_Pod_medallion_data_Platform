@@ -104,20 +104,7 @@ try {
 
             Write-Host "ZIP file downloaded successfully (Size: $((Get-Item $zipFilePath).Length) bytes)"
 
-            # Step 2: Download corresponding hash file
-            $hashFileName = $blobName -replace '\.zip$', '.hash'
-            $hashFilePath = Join-Path $tempDir $hashFileName
-            Write-Host "Downloading hash file: $hashFileName"
-
-            Download-Blob -StorageAccount $storageAccountName `
-                -Container $testContainer `
-                -BlobName $hashFileName `
-                -AccountKey $accountKey `
-                -DestinationPath $hashFilePath
-
-            Write-Host "Hash file downloaded successfully (Size: $((Get-Item $hashFilePath).Length) bytes)"
-
-            # Step 3: Extract ZIP file
+            # Step 2: Extract ZIP file first
             $extractDir = Join-Path $tempDir "extracted"
             New-Item -ItemType Directory -Path $extractDir -Force | Out-Null
             Write-Host "Extracting ZIP to: $extractDir"
@@ -126,6 +113,28 @@ try {
 
             $extractedFiles = Get-ChildItem -Path $extractDir -Recurse -File
             Write-Host "Extracted $($extractedFiles.Count) files"
+
+            # Step 3: Look for hash file inside extracted folder first
+            $hashFileInZip = Get-ChildItem -Path $extractDir -Filter "*.hash" -File | Select-Object -First 1
+
+            if ($hashFileInZip) {
+                # Hash file found inside ZIP
+                $hashFilePath = $hashFileInZip.FullName
+                Write-Host "✅ Hash file found inside ZIP: $($hashFileInZip.Name)"
+            } else {
+                # Hash file not in ZIP, download from blob storage (legacy behavior)
+                Write-Host "Hash file not found inside ZIP, downloading from blob storage..."
+                $hashFileName = $blobName -replace '\.zip$', '.hash'
+                $hashFilePath = Join-Path $tempDir $hashFileName
+
+                Download-Blob -StorageAccount $storageAccountName `
+                    -Container $testContainer `
+                    -BlobName $hashFileName `
+                    -AccountKey $accountKey `
+                    -DestinationPath $hashFilePath
+
+                Write-Host "Hash file downloaded from blob storage (Size: $((Get-Item $hashFilePath).Length) bytes)"
+            }
 
             # Step 4: Run hash.ps1 validation
             $hashScriptPath = Join-Path $PSScriptRoot "hash.ps1"
@@ -182,11 +191,54 @@ try {
                 $validationResult.status = "PASS"
                 $validationResult.message = "All files validated successfully"
 
-                # Step 6: Move to archive on success (optional)
-                Write-Host "Validation PASSED - Files are valid"
+                # Step 6: Trigger ADF Pipeline on successful validation
+                Write-Host "Validation PASSED - Triggering ADF pipeline"
 
-                # TODO: Implement archiving logic
-                # Copy-AzStorageBlob to archive container
+                try {
+                    # Get ADF configuration from environment
+                    $adfResourceGroup = $env:ADF_RESOURCE_GROUP
+                    $adfFactoryName = $env:ADF_FACTORY_NAME
+                    $adfPipelineName = $env:ADF_PIPELINE_NAME
+                    $subscriptionId = $env:AZURE_SUBSCRIPTION_ID
+
+                    if (-not $adfResourceGroup -or -not $adfFactoryName -or -not $adfPipelineName) {
+                        Write-Host "WARNING: ADF configuration not found in environment variables. Using defaults."
+                        $adfResourceGroup = "rg-platform-dev"
+                        $adfFactoryName = "adf-dev-platform"
+                        $adfPipelineName = "pl_HRPayroll_ExcelLoad"
+                        $subscriptionId = "e97fa8c6-457d-495f-aa82-0d87e72f5842"
+                    }
+
+                    # Build ADF REST API URL
+                    $adfUrl = "https://management.azure.com/subscriptions/$subscriptionId/resourceGroups/$adfResourceGroup/providers/Microsoft.DataFactory/factories/$adfFactoryName/pipelines/$adfPipelineName/createRun?api-version=2018-06-01"
+
+                    # Get access token using managed identity
+                    $tokenResponse = Invoke-RestMethod -Uri "http://169.254.169.254/metadata/identity/oauth2/token?api-version=2018-02-01&resource=https://management.azure.com/" -Headers @{Metadata="true"} -Method GET
+                    $accessToken = $tokenResponse.access_token
+
+                    # Prepare pipeline parameters
+                    $pipelineParams = @{
+                        zipFileName = $blobName
+                    } | ConvertTo-Json
+
+                    # Trigger ADF pipeline
+                    $headers = @{
+                        "Authorization" = "Bearer $accessToken"
+                        "Content-Type" = "application/json"
+                    }
+
+                    Write-Host "Triggering ADF pipeline: $adfPipelineName with file: $blobName"
+                    $adfResponse = Invoke-RestMethod -Uri $adfUrl -Method POST -Headers $headers -Body $pipelineParams
+
+                    $validationResult.adfPipelineTriggered = $true
+                    $validationResult.adfRunId = $adfResponse.runId
+                    Write-Host "ADF Pipeline triggered successfully. Run ID: $($adfResponse.runId)"
+
+                } catch {
+                    Write-Host "ERROR triggering ADF pipeline: $_"
+                    $validationResult.adfPipelineTriggered = $false
+                    $validationResult.adfError = $_.Exception.Message
+                }
 
             } elseif ($exitCode -eq 3) {
                 $validationResult.status = "FAIL"
@@ -209,109 +261,7 @@ try {
             # Build response
             $body = $validationResult
 
-            # ===================================================================
-            # SEND EMAIL NOTIFICATION VIA LOGIC APP
-            # ===================================================================
-            $emailLogicAppUrl = $env:EMAIL_LOGIC_APP_URL
-            $teamsWebhookUrl = $env:TEAMS_WEBHOOK_URL
-
-            # Try Logic App email first, then Teams as fallback
-            if ($emailLogicAppUrl) {
-                try {
-                    Write-Host "Sending email notification via Logic App..."
-
-                    # Send validation results directly to Logic App
-                    $emailBody = $validationResult | ConvertTo-Json -Depth 10
-
-                    $emailResponse = Invoke-RestMethod -Uri $emailLogicAppUrl `
-                                                       -Method Post `
-                                                       -Body $emailBody `
-                                                       -ContentType "application/json" `
-                                                       -ErrorAction Stop
-
-                    Write-Host "Email notification sent successfully via Logic App"
-
-                } catch {
-                    Write-Host "Failed to send email via Logic App: $_"
-                    Write-Host "Logic App URL configured: $($null -ne $emailLogicAppUrl)"
-                    # Don't fail the function if notification fails
-                }
-            } elseif ($teamsWebhookUrl) {
-                try {
-                    Write-Host "Sending Teams notification..."
-
-                    # Set color and title based on status
-                    if ($validationResult.status -eq "PASS") {
-                        $themeColor = "28a745"  # Green
-                        $title = "✅ Data Ready to Process"
-                        $actionText = "**SAFE TO DOWNLOAD AND PROCESS**"
-                    } else {
-                        $themeColor = "dc3545"  # Red
-                        $title = "❌ DO NOT PROCESS - Validation Failed"
-                        $actionText = "**DO NOT DOWNLOAD OR PROCESS THIS FILE**"
-                    }
-
-                    # Build Teams message card
-                    $teamsMessage = @{
-                        "@type" = "MessageCard"
-                        "@context" = "https://schema.org/extensions"
-                        themeColor = $themeColor
-                        title = $title
-                        summary = "$($validationResult.zipFile) validation: $($validationResult.status)"
-                        sections = @(
-                            @{
-                                activityTitle = "File: $($validationResult.zipFile)"
-                                activitySubtitle = "Hash File: $($validationResult.hashFile)"
-                                facts = @(
-                                    @{ name = "Status"; value = $validationResult.status }
-                                    @{ name = "Timestamp"; value = $validationResult.timestamp }
-                                    @{ name = "Exit Code"; value = $validationResult.exitCode.ToString() }
-                                    @{ name = "Files Extracted"; value = $validationResult.filesExtracted.ToString() }
-                                    @{ name = "Files OK"; value = $validationResult.okCount.ToString() }
-                                    @{ name = "Files Failed"; value = $validationResult.failCount.ToString() }
-                                )
-                                text = $actionText
-                            },
-                            @{
-                                title = "Validation Details"
-                                text = "``````$($validationResult.validationDetails)``````"
-                            }
-                        )
-                    }
-
-                    if ($validationResult.status -ne "PASS") {
-                        # Add action steps for failed validation
-                        $teamsMessage.sections += @{
-                            title = "Action Required"
-                            text = "1. Contact data provider (government)`n2. Report which files failed validation`n3. Request corrected data`n4. DO NOT process this file"
-                        }
-                    } else {
-                        # Add next steps for passed validation
-                        $teamsMessage.sections += @{
-                            title = "Next Steps"
-                            text = "1. Download ZIP from blob storage to F: drive`n2. Unzip the files`n3. Copy CSV files to correct folders`n4. Upload to blob storage in correct locations"
-                        }
-                    }
-
-                    $teamsBody = $teamsMessage | ConvertTo-Json -Depth 10
-
-                    # Send to Teams
-                    $teamsResponse = Invoke-RestMethod -Uri $teamsWebhookUrl `
-                                                       -Method Post `
-                                                       -Body $teamsBody `
-                                                       -ContentType "application/json" `
-                                                       -ErrorAction Stop
-
-                    Write-Host "Teams notification sent successfully"
-
-                } catch {
-                    Write-Host "Failed to send Teams notification: $_"
-                    Write-Host "Teams webhook URL configured: $($null -ne $teamsWebhookUrl)"
-                    # Don't fail the function if notification fails
-                }
-            } else {
-                Write-Host "No notification method configured (Email Logic App or Teams webhook)"
-            }
+            Write-Host "Validation completed with status: $($validationResult.status)"
 
         } finally {
             # Step 7: Cleanup temp files

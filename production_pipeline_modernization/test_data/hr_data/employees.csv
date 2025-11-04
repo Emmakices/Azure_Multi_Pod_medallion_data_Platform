@@ -1,0 +1,11 @@
+EmployeeID,FirstName,LastName,Email,Department,HireDate,Salary
+E001,John,Smith,john.smith@company.com,HR,2020-01-15,65000
+E002,Sarah,Johnson,sarah.johnson@company.com,IT,2019-03-22,75000
+E003,Michael,Williams,michael.williams@company.com,Finance,2021-06-10,70000
+E004,Emily,Brown,emily.brown@company.com,Marketing,2020-11-05,62000
+E005,David,Jones,david.jones@company.com,IT,2018-09-18,80000
+E006,Lisa,Garcia,lisa.garcia@company.com,HR,2022-02-28,58000
+E007,James,Martinez,james.martinez@company.com,Finance,2019-07-14,72000
+E008,Jennifer,Rodriguez,jennifer.rodriguez@company.com,Marketing,2021-04-20,64000
+E009,Robert,Lee,robert.lee@company.com,IT,2020-08-11,77000
+E010,Maria,Gonzalez,maria.gonzalez@company.com,HR,2019-12-03,61000
